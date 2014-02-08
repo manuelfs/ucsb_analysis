@@ -14,15 +14,19 @@ int main(int argc, char *argv[]){
   time(&startTime);
 
   std::string inFilename("");
+  std::string masspoint("");
   bool iscfA(true), isfast(true);
   int c(0), Nentries(0);
-  while((c=getopt(argc, argv, "n:i:cf"))!=-1){
+  while((c=getopt(argc, argv, "n:i:m:cf"))!=-1){
     switch(c){
     case 'n':
       Nentries=atoi(optarg);
       break;
     case 'i':
       inFilename=optarg;
+      break;
+    case 'm':
+      masspoint=optarg;
       break;
     case 'c':
       iscfA=false;
@@ -32,11 +36,11 @@ int main(int argc, char *argv[]){
       break;
     }
   }
-  cout<<"Opening "<<inFilename<<endl;
+
   std::string outFilename("");
   if(iscfA){
-    outFilename="out/"+inFilename+".root";
-    inFilename="/net/cms2/cms2r0/cfA/"+inFilename+"/cfA_*.root";
+    outFilename="out/"+inFilename+"_"+masspoint+".root";
+    inFilename="/net/cms2/cms2r0/cfA/"+inFilename+"/cfA_*"+masspoint+"*.root";
   }else{
     std::string baseName(inFilename);
     size_t pos(baseName.find(".root"));
@@ -61,8 +65,9 @@ int main(int argc, char *argv[]){
   if(Nentries > tHandler.GetTotalEntries()) Nentries = tHandler.GetTotalEntries();
 
   time(&curTime);
-  cout<<"Getting started takes "<<difftime(curTime,startTime)<<" seconds"<<endl;
-  tHandler.CalTrigEfficiency(Nentries);
+  cout<<"Getting started takes "<<difftime(curTime,startTime)<<" seconds. "
+      <<"Calculating trigger efficiency with "<<Nentries<<" entries."<<endl;
+  tHandler.CalTrigEfficiency(Nentries, outFilename);
 
   time(&curTime);
   cout<<Nentries<<" events took "<<difftime(curTime,startTime)<<" seconds"<<endl;

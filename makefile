@@ -21,7 +21,7 @@ vpath %.d $(MAKEDIR)
 all: calc_trig_efficiency.exe
 
 # List any object files your executable need to be linked with
-$(EXEDIR)/calc_trig_efficiency.exe: calc_trig_efficiency.o trigger_handler.o cfa.o
+$(EXEDIR)/calc_trig_efficiency.exe: calc_trig_efficiency.o trigger_handler.o cfa.o in_json_2012.o
 
 -include $(addsuffix .d,$(addprefix $(MAKEDIR)/,$(notdir $(basename $(wildcard $(SRCDIR)/*.cpp)))))
 
