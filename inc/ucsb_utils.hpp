@@ -2,7 +2,9 @@
 #define H_UCSB_UTILS
 
 #include "TString.h"
+#include "TH1F.h"
 
+void DivideHistosEff(TH1F* hNum, TH1F* hDen, TH1F* hEff);
 double deltaphi(double phi1, double phi2);
 float dR(float eta1, float phi1, float eta2, float phi2);
 TString RoundNumber(double num, int decimals, double denom=1);

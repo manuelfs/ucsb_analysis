@@ -1,13 +1,36 @@
+#include <iostream>
 #include "TMath.h"
 #include "TString.h"
+#include "TH1F.h"
+
+using namespace std;
+
+void DivideHistosEff(TH1F* hNum, TH1F* hDen, TH1F* hEff){
+  float num, den, eff;
+  for(int bin(1); bin <= hNum->GetNbinsX(); bin++){
+    num = hNum->GetBinContent(bin);
+    den = hDen->GetBinContent(bin);
+    if(den){
+      eff = num/den;
+      if(eff<=1){
+	hEff->SetBinContent(bin, eff);
+	hEff->SetBinError(bin, sqrt(num)/den); // Errors from likelihood to be implemented
+      } else cout<<"Ratio "<<eff<<" > 1, not an efficiency calculation"<<endl;
+    } else {
+      hEff->SetBinContent(bin, 0);
+      hEff->SetBinError(bin, 0);
+    }
+  }
+}
 
 double deltaphi(double phi1, double phi2){
   double result = fabs(phi1-phi2);
-  if (result>TMath::Pi()) result = 2*TMath::Pi() - result;
+  while (result>TMath::Pi()) result -= 2*TMath::Pi();
+  while (result<=-TMath::Pi()) result += 2*TMath::Pi();
   return result;
 }
 
-float dR(float eta1, float phi1, float eta2, float phi2) {
+float dR(float eta1, float eta2, float phi1, float phi2) {
   return sqrt(pow(eta1-eta2, 2) + pow(fabs(deltaphi(phi1,phi2)), 2)) ;
 }
 

@@ -25,7 +25,7 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
   TFile outFile(outFilename.c_str(), "recreate");
   outFile.cd();
 
-  TString TriggerName[][2] = {{"Mu40", "PFNoPUHT350_Mu15_PFMET45"}};
+  TString TriggerName[][2] = {{"Mu40", "Mu40_PFNoPUHT350"}};
   int nBins[] = {30}, TrigEffDecision[NTrigEfficiencies][2];
   float Range[][2] = {{0, 600}};
 
@@ -53,15 +53,11 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
     vector<int> signal_elecs;
     vector<int> veto_elecs; 
     for(uint imu=0; imu<mus_pt->size(); imu++){
-      cout<<"Doing signal muons"<<endl;
       if(passedMuonSelection(imu)) good_muons_jet_cleaning.push_back(imu);
-      cout<<"Doing veto muons"<<endl;
       if(passedMuonVetoSelection(imu)) veto_muons_jet_cleaning.push_back(imu);
     }
     for(uint iel=0; iel<els_pt->size(); iel++){
-      cout<<"Doing signal els"<<endl;
       if(passedElectronSelection(iel)) signal_elecs.push_back(iel);
-      cout<<"Doing veto els"<<endl;
       if(passedElectronVetoSelection(iel)) veto_elecs.push_back(iel);
     }
 
@@ -73,8 +69,8 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
       bool isElectron = false;     
       for(uint cit = 0; cit < signal_elecs.size(); cit++) {
 	double tmpdR = dR( jets_AK5PFclean_eta->at(ijet),
-			   jets_AK5PFclean_phi->at(ijet),
 			   els_eta->at(signal_elecs[cit]),
+			   jets_AK5PFclean_phi->at(ijet),
 			   els_phi->at(signal_elecs[cit]));	
 	if(tmpdR < 0.3) isElectron = true;
       }
@@ -82,8 +78,8 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
       bool isMuon = false;
       for(uint cit = 0; cit < good_muons_jet_cleaning.size();cit++) {
 	double tmpdR = dR( jets_AK5PFclean_eta->at(ijet),
-			   jets_AK5PFclean_phi->at(ijet),
 			   mus_eta->at(good_muons_jet_cleaning[cit]),
+			   jets_AK5PFclean_phi->at(ijet),
 			   mus_phi->at(good_muons_jet_cleaning[cit]));
 	
 	if(tmpdR < 0.1) isMuon = true;
@@ -102,8 +98,8 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
       bool close_to_jet = false;
       for(uint iit = 0; iit < good_jets.size(); iit++) {
 	double tmpdR = dR( jets_AK5PFclean_eta->at(good_jets[iit]),
-			   jets_AK5PFclean_phi->at(good_jets[iit]),
 			   mus_eta->at(good_muons_jet_cleaning[cit]),
+			   jets_AK5PFclean_phi->at(good_jets[iit]),
 			   mus_phi->at(good_muons_jet_cleaning[cit]));
 	if(tmpdR < 0.3) close_to_jet = true;
       }
@@ -115,16 +111,17 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
       
       for(uint iit = 0; iit < good_jets.size(); iit++) {
 	double tmpdR = dR( jets_AK5PFclean_eta->at(good_jets[iit]),
-			   jets_AK5PFclean_phi->at(good_jets[iit]),
 			   mus_eta->at(veto_muons_jet_cleaning[cit]),
+			   jets_AK5PFclean_phi->at(good_jets[iit]),
 			   mus_phi->at(veto_muons_jet_cleaning[cit]));
 	if( tmpdR < 0.3 ) {close_to_jet = true;}
       }      
       if( !close_to_jet ) veto_muons.push_back(veto_muons_jet_cleaning[cit]);
     }
-    cout<<entry<<": "<<good_jets.size()<<" jets, "<<signal_muons.size()<<" signal muons, "
-	<<veto_muons.size()<<" veto muons, "<<signal_elecs.size()<<" signal elecs, "
-	<<veto_elecs.size()<<" veto elecs. "<<els_pt->size()<<endl;
+//     cout<<entry<<": "<<good_jets.size()<<" jets, "<<good_muons_jet_cleaning.size()<<" signal cleaning muons, "
+// 	<<veto_muons_jet_cleaning.size()<<" veto cleaning muons, "<<signal_muons.size()<<" signal muons, "
+// 	<<veto_muons.size()<<" veto muons, "<<signal_elecs.size()<<" signal elecs, "
+// 	<<veto_elecs.size()<<" veto elecs. "<<els_pt->size()<<endl<<"======"<<endl;
 
     // Baseline selection
     if(good_jets.size() < 3) continue;
@@ -158,10 +155,8 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
     } // Loop over trigger efficiencies
   } // Loop over events
 
-  for(int ieff(0); ieff < NTrigEfficiencies; ieff++) {
-    hTrigEff[ieff][2] = (TH1F *)hTrigEff[ieff][0]->Clone();
-    hTrigEff[ieff][2]->Divide(hTrigEff[ieff][1]);
-  }
+  for(int ieff(0); ieff < NTrigEfficiencies; ieff++) 
+    DivideHistosEff(hTrigEff[ieff][0], hTrigEff[ieff][1], hTrigEff[ieff][2]);
   outFile.Write();
   outFile.Close();
   cout<<"Finished saving file "<<outFilename<<endl;
@@ -177,6 +172,13 @@ bool trigger_handler::passedMuonSelection(uint imu){
   float relIso = (mus_pfIsolationR03_sumChargedHadronPt->at(imu) + sumEt)/mus_pt->at(imu);
   int pfIdx=-1;
   
+//   cout<<"Muon "<<imu<<" => global "<<mus_isGlobalMuon->at(imu)<<", isPFMuon "<< mus_isPFMuon->at(imu)
+//        <<", GlobalMuonPromptTight "<< mus_id_GlobalMuonPromptTight->at(imu)
+//        <<", LayersWithMeasurement "<< mus_tk_LayersWithMeasurement->at(imu)<<", numvalPixelhits "<< mus_tk_numvalPixelhits->at(imu)
+//        <<", numberOfMatchedStations "<<mus_numberOfMatchedStations->at(imu) <<", dB "<< mus_dB->at(imu)
+//        <<", pt "<< mus_pt->at(imu)<<", MuonPTThreshold "<< MuonPTThreshold
+//        <<", eta "<< mus_eta->at(imu)<<", relIso "<< relIso
+//        <<", hasPFMatch "<< hasPFMatch(imu, particleId::muon, pfIdx)<<", tk_vx "<< mus_tk_vx->at(imu)<<endl;
   return (mus_isGlobalMuon->at(imu) > 0
 	  && mus_isPFMuon->at(imu) > 0
 	  && mus_id_GlobalMuonPromptTight->at(imu)> 0 
@@ -214,11 +216,10 @@ bool trigger_handler::passedMuonVetoSelection(uint imu){
 }
 
 bool trigger_handler::passedElectronSelection(uint iel){
-  cout<<iel<<" iel, "<<els_pt->size()<<endl;
   if(iel >= els_pt->size()) return false;
 
-  cout<<"pt "<<els_pt->at(iel)<<", thresh "<<ElectronPTThreshold<<", eta "<<els_scEta->at(iel)
-      <<", conversion "<<els_hasMatchedConversion->at(iel)<<endl;
+//   cout<<"pt "<<els_pt->at(iel)<<", thresh "<<ElectronPTThreshold<<", eta "<<els_scEta->at(iel)
+//       <<", conversion "<<els_hasMatchedConversion->at(iel)<<endl;
   float d0PV = els_d0dum->at(iel)-pv_x->at(0)*sin(els_tk_phi->at(iel))+pv_y->at(0)*cos(els_tk_phi->at(iel));
   double sumEt = els_PFphotonIsoR03->at(iel) + els_PFneutralHadronIsoR03->at(iel) 
     - rho_kt6PFJetsForIsolation2011 * GetEffectiveArea(els_scEta->at(iel), IsMC());
@@ -226,8 +227,8 @@ bool trigger_handler::passedElectronSelection(uint iel){
   double relIso = (els_PFchargedHadronIsoR03->at(iel) + sumEt)/els_pt->at(iel);
   int pfIdx=-1;
   
-  cout<<"pt "<<els_pt->at(iel)<<", thresh "<<ElectronPTThreshold<<", eta "<<els_scEta->at(iel)
-      <<", relIso "<<relIso<<", conversion "<<els_hasMatchedConversion->at(iel)<<endl;
+//   cout<<"pt "<<els_pt->at(iel)<<", thresh "<<ElectronPTThreshold<<", eta "<<els_scEta->at(iel)
+//       <<", relIso "<<relIso<<", conversion "<<els_hasMatchedConversion->at(iel)<<endl;
   return (els_pt->at(iel) > ElectronPTThreshold
 	  && fabs(els_scEta->at(iel)) < 2.5
 	  && relIso < 0.15
@@ -320,6 +321,9 @@ bool trigger_handler::hasPFMatch(int index, particleId::leptonType type, int &pf
   }
   
   for(unsigned iCand=0; iCand<pfcand_pt->size(); iCand++) {
+//     cout<<"Repetition "<<iCand<<": particleId "<<pfcand_particleId->at(iCand)
+// 	<<", deltaRVal "<<deltaRVal<<", deltaPT "<<deltaPT
+// 	<<", eta "<<pfcand_eta->at(iCand)<<", phi "<<pfcand_phi->at(iCand)<<endl;
     if(pfcand_particleId->at(iCand)==type) {
       double tempDeltaR = dR(leptonEta, pfcand_eta->at(iCand), leptonPhi, pfcand_phi->at(iCand));
       if(tempDeltaR < deltaRVal) {
@@ -329,7 +333,10 @@ bool trigger_handler::hasPFMatch(int index, particleId::leptonType type, int &pf
       }
     }
   }
-  
+ 
+//   cout<<"Lepton "<<index<<" => type "<<type
+//       <<", leptonEta "<< leptonEta<<", leptonPhi "<< leptonPhi
+//       <<", leptonPt "<< leptonPt<<", deltaPT "<< deltaPT<<endl;
   if(type == particleId::electron) return (deltaPT<10);
   else return (deltaPT<5);
 }
@@ -348,8 +355,8 @@ int trigger_handler::GetNumGoodJets(double ptThresh) const{
 
 bool trigger_handler::isGoodJet(const unsigned int ijet, const double ptThresh, const double etaThresh) const{
   if(jets_AK5PFclean_pt->size()<=ijet) return false;
-  if(jets_AK5PFclean_pt->at(ijet)<ptThresh || fabs(jets_AK5PFclean_eta->at(ijet))>etaThresh) return false;
   if(!passedPFJetSelection(ijet)) return false;
+  if(jets_AK5PFclean_pt->at(ijet)<ptThresh || fabs(jets_AK5PFclean_eta->at(ijet))>etaThresh) return false;
   return true;
 }
 
@@ -367,12 +374,12 @@ bool trigger_handler::passedPFJetSelection(const unsigned int ijet) const{
     CHF = jets_AK5PFclean_chgHadE->at(ijet)/jetenergy;   
   }
    
-  return (jets_AK5PFclean_neutralEmE->at(ijet)/jetenergy < 0.99 &&
-	  jets_AK5PFclean_chgEmE->at(ijet)/jetenergy < 0.99 &&
-	  jets_AK5PFclean_neutralHadE->at(ijet)/jetenergy < 0.99 &&
-	  jets_AK5PFclean_chgHadE->at(ijet)/jetenergy > 0 &&
-	  chgMult > 0 &&
-	  numConst > 1);
+//    cout<<"Jet "<<ijet<<" => NEF "<<NEF<<", CEF "<< CEF
+//        <<", NHF "<<NHF <<",  CHF "<< CHF<<", chgMult "<< chgMult
+//        <<", pt "<<jets_AK5PFclean_pt->at(ijet)<<", eta "<<jets_AK5PFclean_eta->at(ijet)
+//        <<", numConst "<< numConst<<endl;
+  return (NEF < 0.99 && CEF < 0.99 && NHF < 0.99 && CHF > 0 &&
+	  chgMult > 0 && numConst > 1);
 }
 
 bool trigger_handler::PassesPVCut() const{
@@ -401,6 +408,9 @@ bool trigger_handler::PassesMETCleaningCut() const{
   //     if(isProblemJet(jet)) return false;
   //   }
   //   if(pfTypeImets_et->at(0)>2.0*mets_AK5_et->at(0)) return false; 
+//   cout<<", cschalofilter "<< cschalofilter_decision<<",  hbhefilter"<< hbhefilter_decision<<", hcallaserfilter "<<hcallaserfilter_decision 
+//       <<", ecalTPfilter "<< ecalTPfilter_decision <<",  trackingfailurefilter"<< trackingfailurefilter_decision 
+//       <<", eebadscfilter "<< eebadscfilter_decision  <<", scrapingVeto_decision "<<scrapingVeto_decision<<endl;
   return cschalofilter_decision
     && hbhefilter_decision
     && hcallaserfilter_decision 
@@ -422,24 +432,16 @@ bool trigger_handler::IsMC(){
 trigger_handler::trigger_handler(const std::string &fileName, const bool isList, const bool fastMode):
   cfA(fileName, isList){
   if (fastMode) { // turn off unnecessary branches
-    //chainA.SetBranchStatus("els_*",0);
     chainA.SetBranchStatus("triggerobject_*",0);
     chainA.SetBranchStatus("standalone_t*",0);
     chainA.SetBranchStatus("L1trigger_*",0);
     chainA.SetBranchStatus("passprescale*",0);
     chainA.SetBranchStatus("softjetUp_*",0);
-//     chainA.SetBranchStatus("pdfweights_*",0);
     chainA.SetBranchStatus("photon_*",0);
     chainB.SetBranchStatus("Ntcmets",0);
     chainB.SetBranchStatus("tcmets_*",0);
     chainB.SetBranchStatus("Nphotons",0);
     chainB.SetBranchStatus("photons_*",0);
-//     chainB.SetBranchStatus("Npf_photons",0);
-//     chainB.SetBranchStatus("pf_photons_*",0);
-//    chainB.SetBranchStatus("Nmus",0);
-    //    chainB.SetBranchStatus("mus_*",0);
-    //    chainB.SetBranchStatus("Nels",0);
-    //    chainB.SetBranchStatus("els_*",0);
     chainB.SetBranchStatus("Nmets*",0);
     chainB.SetBranchStatus("mets*",0);
     chainB.SetBranchStatus("mets_AK5_et",1);
@@ -450,9 +452,13 @@ trigger_handler::trigger_handler(const std::string &fileName, const bool isList,
     chainB.SetBranchStatus("jets_AK5PF_*",0);
     chainB.SetBranchStatus("Njets_AK5PF",0);
     chainB.SetBranchStatus("jets_AK5PF_*",0);
-    //     chainB.SetBranchStatus("jets_AK5PFclean_*",0);
-    //     chainB.SetBranchStatus("Njets_AK5PFclean",0);
-    //     chainB.SetBranchStatus("jets_AK5PFclean_*",0);
+//     chainB.SetBranchStatus("jets_AK5PFclean_*",0);
+//     chainB.SetBranchStatus("Njets_AK5PFclean",0);
+//     chainB.SetBranchStatus("jets_AK5PFclean_*",0);
+
+//     chainA.SetBranchStatus("pdfweights_*",0);
+//     chainB.SetBranchStatus("Npf_photons",0);
+//     chainB.SetBranchStatus("pf_photons_*",0);
   }
 }
 
