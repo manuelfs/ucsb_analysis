@@ -9,7 +9,6 @@
 using namespace std;
 
 int main(int argc, char *argv[]){
-  cout<<"Starting calc_trig_efficiency"<<endl;
   time_t startTime, curTime;
   time(&startTime);
 
@@ -56,7 +55,7 @@ int main(int argc, char *argv[]){
       }
     }
     outFilename="out/"+baseName+".root";
-    std::cout << inFilename << "\n" << baseName << "\n" << outFilename << "\n";
+    //cout << inFilename << "\n" << baseName << "\n" << outFilename << "\n";
   }
 
   cout<<"Opening "<<inFilename<<endl;
