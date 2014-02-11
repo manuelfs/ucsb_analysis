@@ -1,5 +1,6 @@
 #include "in_json_2012.hpp"
 #include "trigger_handler.hpp"
+#include "timer.hpp"
 #include <cfloat>
 #include <ctime>
 #include <cmath>
@@ -18,16 +19,24 @@ const std::vector<std::vector<int> > VRunLumiPrompt(MakeVRunLumi("Golden"));
 const std::vector<std::vector<int> > VRunLumi24Aug(MakeVRunLumi("24Aug"));
 const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
 
-#define NTrigEfficiencies 1
+#define NTrigEfficiencies 12
 
 void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
 
   TFile outFile(outFilename.c_str(), "recreate");
   outFile.cd();
 
-  TString TriggerName[][2] = {{"Mu40", "Mu40_PFNoPUHT350"}};
-  int nBins[] = {30}, TrigEffDecision[NTrigEfficiencies][2];
-  float Range[][2] = {{0, 600}};
+  TString TriggerName[][2] = {{"Mu40", "Mu40_PFHT350"},         {"Mu40", "Mu40_PFNoPUHT350"},
+			      {"Mu40", "PFHT350_Mu15_PFMET45"}, {"Mu40", "PFNoPUHT350_Mu15_PFMET45"},
+			      {"Mu40", "PFHT400_Mu5_PFMET45"},  {"Mu40", "PFNoPUHT400_Mu5_PFMET45"},
+			      {"Ele27_WP80",               "CleanPFHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET4"}, 
+			      {"Ele27_WP80",               "CleanPFNoPUHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"},
+			      {"Ele27_WP80",               "CleanPFHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"}, 
+			      {"Ele27_WP80",               "CleanPFNoPUHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"},
+			      {"Ele80_CaloIdVT_TrkIdT",    "CleanPFHT300_Ele40_CaloIdVT_TrkIdT"}, 
+			      {"Ele80_CaloIdVT_GsfTrkIdT", "CleanPFNoPUHT300_Ele40_CaloIdVT_TrkIdT"}};
+  int nBins = 30, TrigEffDecision[NTrigEfficiencies][2];
+  float Range[2] = {0, 600};
 
   TH1F *hTrigEff[NTrigEfficiencies][3];
   TString hName, trigname, trigEffName, hisPrefix[] = {"Num_", "Den_", "Eff_"};
@@ -35,11 +44,17 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
     for(int his(0); his < 3; his++){
       hName = hisPrefix[his]; hName += TriggerName[ieff][0]; hName += "_Vs_";
       hName += TriggerName[ieff][1];
-      hTrigEff[ieff][his] = new TH1F(hName, hName, nBins[ieff], Range[ieff][0], Range[ieff][1]);
+      hTrigEff[ieff][his] = new TH1F(hName, hName, nBins, Range[0], Range[1]);
     }
   }
 
+  Timer timer(Nentries);
+  timer.Start();
   for(int entry(0); entry < Nentries; entry++){
+    if(entry%1000==0 && entry!=0){
+      timer.PrintRemainingTime();
+    }
+    timer.Iterate();
     GetEntry(entry);
 
     // Event clean-up
@@ -118,10 +133,10 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
       }      
       if( !close_to_jet ) veto_muons.push_back(veto_muons_jet_cleaning[cit]);
     }
-//     cout<<entry<<": "<<good_jets.size()<<" jets, "<<good_muons_jet_cleaning.size()<<" signal cleaning muons, "
-// 	<<veto_muons_jet_cleaning.size()<<" veto cleaning muons, "<<signal_muons.size()<<" signal muons, "
-// 	<<veto_muons.size()<<" veto muons, "<<signal_elecs.size()<<" signal elecs, "
-// 	<<veto_elecs.size()<<" veto elecs. "<<els_pt->size()<<endl<<"======"<<endl;
+//      cout<<entry<<": "<<good_jets.size()<<" jets, "<<good_muons_jet_cleaning.size()<<" signal cleaning muons, "
+//  	<<veto_muons_jet_cleaning.size()<<" veto cleaning muons, "<<signal_muons.size()<<" signal muons, "
+//  	<<veto_muons.size()<<" veto muons, "<<signal_elecs.size()<<" signal elecs, "
+//  	<<veto_elecs.size()<<" veto elecs. "<<els_pt->size()<<endl<<"======"<<endl;
 
     // Baseline selection
     if(good_jets.size() < 3) continue;
@@ -142,7 +157,12 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
 	  //cout<<trigname<<": decision "<<trigger_decision->at(tri)<<", prescale "<<trigger_prescalevalue->at(tri)<<endl;
 	  if(trigname.BeginsWith(trigEffName)) {
 	    TrigEffDecision[ieff][ind]++;
-	    if(trigger_decision->at(tri)==1) TrigEffDecision[ieff][ind]++;
+	    if(trigger_decision->at(tri)==1) {TrigEffDecision[ieff][ind]++;
+// 	      if(ind==1)cout<<"Event "<<entry<<": "<<good_jets.size()<<" jets, "<<good_muons_jet_cleaning.size()<<" signal cleaning muons, "
+// 		  <<veto_muons_jet_cleaning.size()<<" veto cleaning muons, "<<signal_muons.size()<<" signal muons, "
+// 		  <<veto_muons.size()<<" veto muons, "<<signal_elecs.size()<<" signal elecs, "
+// 		  <<veto_elecs.size()<<" veto elecs. "<<els_pt->size()<<endl<<"======"<<endl;
+}
 	    continue;
 	  }
 	} // Loop over triggers
@@ -443,12 +463,15 @@ trigger_handler::trigger_handler(const std::string &fileName, const bool isList,
     chainB.SetBranchStatus("Nphotons",0);
     chainB.SetBranchStatus("photons_*",0);
     chainB.SetBranchStatus("Nmets*",0);
+    chainB.SetBranchStatus("taus*",0);
+    chainB.SetBranchStatus("tracks*",0);
     chainB.SetBranchStatus("mets*",0);
-    chainB.SetBranchStatus("mets_AK5_et",1);
+    chainB.SetBranchStatus("pfmets*",0);
+    chainB.SetBranchStatus("mets_AK5_et",0);
     chainB.SetBranchStatus("Nmc*",0);
     chainB.SetBranchStatus("mc_*",0);
-    chainB.SetBranchStatus("Nmc_doc*",1);
-    chainB.SetBranchStatus("mc_doc*",1);
+    chainB.SetBranchStatus("Nmc_*",0);
+    chainB.SetBranchStatus("mc_*",0);
     chainB.SetBranchStatus("jets_AK5PF_*",0);
     chainB.SetBranchStatus("Njets_AK5PF",0);
     chainB.SetBranchStatus("jets_AK5PF_*",0);

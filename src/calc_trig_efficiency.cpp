@@ -61,7 +61,7 @@ int main(int argc, char *argv[]){
   cout<<"Opening "<<inFilename<<endl;
   trigger_handler tHandler(inFilename, false, isfast); 
   
-  if(Nentries > tHandler.GetTotalEntries()) Nentries = tHandler.GetTotalEntries();
+  if(Nentries > tHandler.GetTotalEntries() || Nentries < 0) Nentries = tHandler.GetTotalEntries();
 
   time(&curTime);
   cout<<"Getting started takes "<<difftime(curTime,startTime)<<" seconds. "
@@ -70,4 +70,6 @@ int main(int argc, char *argv[]){
 
   time(&curTime);
   cout<<Nentries<<" events took "<<difftime(curTime,startTime)<<" seconds"<<endl;
+
+  return 0;
 }
