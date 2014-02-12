@@ -11,7 +11,7 @@ fi
 # Signal @14TeV: 40,321 entries
  ./run/calc_trig_efficiency.exe -i SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71 -n $Nevents  -m 1145_800 | tee log/make_14TeV_T1tttt.log &
 # Signal @8TeV: 127,823 entries
- ./run/calc_trig_efficiency.exe -i SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68 -n $Nevents  -m 1145_800 | tee log/make_8TeV_T1tttt.log &
+ ./run/calc_trig_efficiency.exe -i SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68 -n $Nevents  -m 1150_800 | tee log/make_8TeV_T1tttt.log &
 
 # All ttbar @13TeV: 997,120 entries
  ./run/calc_trig_efficiency.exe -i TTbar_TuneZ2star_13TeV-pythia6-tauola_Summer13dr53X-PU45bx25_START53_V19D-v2_AODSIM_UCSB1933_v71 -n $Nevents  | tee log/make_13TeV_ttbar.log &
