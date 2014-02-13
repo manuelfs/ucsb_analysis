@@ -2,7 +2,7 @@
 #include <string>
 #include <unistd.h>
 #include "TString.h"
-#include "trigger_handler.hpp"
+#include "ra4_handler.hpp"
 #include <ctime>
 
  
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]){
   }
 
   cout<<"Opening "<<inFilename<<endl;
-  trigger_handler tHandler(inFilename, false, isfast); 
+  ra4_handler tHandler(inFilename, false, isfast); 
   
   if(Nentries > tHandler.GetTotalEntries() || Nentries < 0) Nentries = tHandler.GetTotalEntries();
 

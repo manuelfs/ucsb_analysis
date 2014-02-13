@@ -1,5 +1,5 @@
 #include "in_json_2012.hpp"
-#include "trigger_handler.hpp"
+#include "ra4_handler.hpp"
 #include "timer.hpp"
 #include <cfloat>
 #include <ctime>
@@ -20,14 +20,15 @@ const std::vector<std::vector<int> > VRunLumiPrompt(MakeVRunLumi("Golden"));
 const std::vector<std::vector<int> > VRunLumi24Aug(MakeVRunLumi("24Aug"));
 const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
 
-#define NTrigEfficiencies 12
+#define NTrigEfficiencies 14
 
-void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
+void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
 
   TFile outFile(outFilename.c_str(), "recreate");
   outFile.cd();
 
   TString TriggerName[][2] = {{"Mu40", "Mu40_PFHT350"},         {"Mu40", "Mu40_PFNoPUHT350"},
+			      {"Mu40_eta2p1", "Mu40_PFHT350"},  {"Mu17", "PFHT350_Mu15_PFMET45"},
 			      {"Mu40", "PFHT350_Mu15_PFMET45"}, {"Mu40", "PFNoPUHT350_Mu15_PFMET45"},
 			      {"Mu40", "PFHT400_Mu5_PFMET45"},  {"Mu40", "PFNoPUHT400_Mu5_PFMET45"},
 			      {"Ele80_CaloIdVT_TrkIdT",    "CleanPFHT300_Ele40_CaloIdVT_TrkIdT"}, 
@@ -42,6 +43,7 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
   TH1F *hTrigEff[NTrigEfficiencies][3][2];
   TH2F *h2TrigEff[NTrigEfficiencies][3];
   TString hName, trigname, trigEffName, hisPrefix[] = {"Num_", "Den_", "Eff_"}, trigType[] = {"HT", "MET"};
+  TString xTitle[] = {"H_{T} (GeV)", "MET (GeV)"};
   float cutHtMet[] = {450, 120}, HtMet[2];
   bool IsHtMet[NTrigEfficiencies][2], trigCombExists[NTrigEfficiencies], noTriggers = true;
   GetEntry(0);
@@ -66,6 +68,7 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
 	hName = hisPrefix[his]; hName+= trigType[typ]; hName += "_";
 	hName += TriggerName[ieff][0]; hName += "_Vs_";	hName += TriggerName[ieff][1];
 	hTrigEff[ieff][his][typ] = new TH1F(hName, hName, nBins[typ], Range[typ][0], Range[typ][1]);
+	hTrigEff[ieff][his][typ]->SetXTitle(xTitle[typ]);
       }
       if(IsHtMet[ieff][0] && IsHtMet[ieff][1]) {
 	if(his==2) continue;
@@ -83,7 +86,7 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
   Timer timer(Nentries);
   timer.Start();
   for(int entry(0); entry < Nentries; entry++){
-    if(entry%1000==0 && entry!=0){
+    if(entry%5000==0 && entry!=0){
       timer.PrintRemainingTime();
     }
     timer.Iterate();
@@ -136,7 +139,7 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
 	  h2TrigEff[ieff][1]->Fill(HtMet[0], HtMet[1]);
 	  if(TrigEffDecision[ieff][1]==2) h2TrigEff[ieff][0]->Fill(HtMet[0], HtMet[1]);
 	  for(int typ(0); typ < 2; typ++){
-	    if(IsHtMet[ieff][typ] && HtMet[(typ+1)%1] > cutHtMet[(typ+1)%1]){
+	    if(IsHtMet[ieff][typ] && HtMet[(typ+1)%2] > cutHtMet[(typ+1)%2]){
 	      hTrigEff[ieff][1][typ]->Fill(HtMet[typ]);
 	      if(TrigEffDecision[ieff][1]==2) hTrigEff[ieff][0][typ]->Fill(HtMet[typ]);
 	    }
@@ -171,7 +174,7 @@ void trigger_handler::CalTrigEfficiency(int Nentries, string outFilename){
   cout<<"Finished saving file "<<outFilename<<endl;
 }
 
-void trigger_handler::PrintAllTriggers(string outName){
+void ra4_handler::PrintAllTriggers(string outName){
   GetEntry(0);
   ofstream outTrigger(outName.c_str());
   for(unsigned int tri(0); tri < trigger_decision->size(); tri++)
@@ -179,7 +182,7 @@ void trigger_handler::PrintAllTriggers(string outName){
   cout<<"Printed list of triggers in "<<outName.c_str()<<endl;
 }
 
-vector<int> trigger_handler::GetMuons(bool doSignal){
+vector<int> ra4_handler::GetMuons(bool doSignal){
   vector<int> muons;
   for(uint index=0; index<mus_pt->size(); index++)
     if(doSignal){
@@ -190,7 +193,7 @@ vector<int> trigger_handler::GetMuons(bool doSignal){
   return muons;
 }
 
-vector<int> trigger_handler::GetElectrons(bool doSignal){
+vector<int> ra4_handler::GetElectrons(bool doSignal){
   vector<int> electrons;
   for(uint index=0; index<els_pt->size(); index++)
     if(doSignal){
@@ -201,7 +204,7 @@ vector<int> trigger_handler::GetElectrons(bool doSignal){
   return electrons;
 }
 
-vector<int> trigger_handler::GetJets(vector<int> electrons, vector<int> muons, float &HT){
+vector<int> ra4_handler::GetJets(vector<int> electrons, vector<int> muons, float &HT){
   vector<int> jets;
   HT = 0;
   for(uint ijet = 0; ijet<jets_AK5PFclean_pt->size(); ijet++) {
@@ -228,7 +231,7 @@ vector<int> trigger_handler::GetJets(vector<int> electrons, vector<int> muons, f
   return jets;
 }
 
-bool trigger_handler::passedMuonSelection(uint imu){
+bool ra4_handler::passedMuonSelection(uint imu){
   if(imu >= mus_pt->size()) return false;
 
   float d0PV = mus_tk_d0dum->at(imu)-pv_x->at(0)*sin(mus_tk_phi->at(imu))+pv_y->at(0)*cos(mus_tk_phi->at(imu));
@@ -262,7 +265,7 @@ bool trigger_handler::passedMuonSelection(uint imu){
   
 }
 
-bool trigger_handler::passedMuonVetoSelection(uint imu){
+bool ra4_handler::passedMuonVetoSelection(uint imu){
   if(imu >= mus_pt->size()) return false;
 
   double sumEt = mus_pfIsolationR03_sumNeutralHadronEt->at(imu) + mus_pfIsolationR03_sumPhotonEt->at(imu) 
@@ -281,7 +284,7 @@ bool trigger_handler::passedMuonVetoSelection(uint imu){
 	  && hasPFMatch(imu, particleId::muon, pfIdx));      
 }
 
-bool trigger_handler::passedElectronSelection(uint iel){
+bool ra4_handler::passedElectronSelection(uint iel){
   if(iel >= els_pt->size()) return false;
 
   //   cout<<"pt "<<els_pt->at(iel)<<", thresh "<<ElectronPTThreshold<<", eta "<<els_scEta->at(iel)
@@ -318,7 +321,7 @@ bool trigger_handler::passedElectronSelection(uint iel){
 	  );
 }
 
-bool trigger_handler::passedElectronVetoSelection(uint iel){
+bool ra4_handler::passedElectronVetoSelection(uint iel){
   if(iel >= els_pt->size()) return false;
 
   float d0PV = els_d0dum->at(iel)-pv_x->at(0)*sin(els_tk_phi->at(iel))+pv_y->at(0)*cos(els_tk_phi->at(iel));
@@ -346,7 +349,7 @@ bool trigger_handler::passedElectronVetoSelection(uint iel){
 }
 
 
-float trigger_handler::GetEffectiveArea(float SCEta, bool isMC){
+float ra4_handler::GetEffectiveArea(float SCEta, bool isMC){
   float EffectiveArea;
 
   if(isMC) {
@@ -372,7 +375,7 @@ float trigger_handler::GetEffectiveArea(float SCEta, bool isMC){
   return EffectiveArea;
 }
 
-bool trigger_handler::hasPFMatch(int index, particleId::leptonType type, int &pfIdx){
+bool ra4_handler::hasPFMatch(int index, particleId::leptonType type, int &pfIdx){
   double deltaRVal = 999.;
   double deltaPT = 999.;
   double leptonEta = 0, leptonPhi = 0, leptonPt = 0;
@@ -407,11 +410,11 @@ bool trigger_handler::hasPFMatch(int index, particleId::leptonType type, int &pf
   else return (deltaPT<5);
 }
 
-double trigger_handler::getDZ(double vx, double vy, double vz, double px, double py, double pz, int firstGoodVertex){
+double ra4_handler::getDZ(double vx, double vy, double vz, double px, double py, double pz, int firstGoodVertex){
   return vz - pv_z->at(firstGoodVertex) -((vx-pv_x->at(firstGoodVertex))*px+(vy-pv_y->at(firstGoodVertex))*py)*pz/(px*px+py*py); 
 }
 
-int trigger_handler::GetNumGoodJets(double ptThresh) const{
+int ra4_handler::GetNumGoodJets(double ptThresh) const{
   int numGoodJets(0);
   for(uint ijet(0); ijet<jets_AK5PFclean_pt->size(); ++ijet){
     if(isGoodJet(ijet, ptThresh, 2.4)) ++numGoodJets;
@@ -419,14 +422,14 @@ int trigger_handler::GetNumGoodJets(double ptThresh) const{
   return numGoodJets;
 }
 
-bool trigger_handler::isGoodJet(const unsigned int ijet, const double ptThresh, const double etaThresh) const{
+bool ra4_handler::isGoodJet(const unsigned int ijet, const double ptThresh, const double etaThresh) const{
   if(jets_AK5PFclean_pt->size()<=ijet) return false;
   if(!passedPFJetSelection(ijet)) return false;
   if(jets_AK5PFclean_pt->at(ijet)<ptThresh || fabs(jets_AK5PFclean_eta->at(ijet))>etaThresh) return false;
   return true;
 }
 
-bool trigger_handler::passedPFJetSelection(const unsigned int ijet) const{
+bool ra4_handler::passedPFJetSelection(const unsigned int ijet) const{
   double rawRatio =(jets_AK5PFclean_rawPt->at(ijet)/jets_AK5PFclean_pt->at(ijet)); // Same as jets_AK5PFclean_corrFactorRaw
   const double jetenergy = jets_AK5PFclean_energy->at(ijet) * rawRatio;
   double NEF = -999., CEF = -999., NHF=-999., CHF=-999.;
@@ -448,14 +451,14 @@ bool trigger_handler::passedPFJetSelection(const unsigned int ijet) const{
 	  chgMult > 0 && numConst > 1);
 }
 
-bool trigger_handler::PassesPVCut() const{
+bool ra4_handler::PassesPVCut() const{
   if(beamSpot_x->size()<1 || pv_x->size()<1) return false;
   const double pv_rho(sqrt(pv_x->at(0)*pv_x->at(0) + pv_y->at(0)*pv_y->at(0)));
   if(pv_ndof->at(0)>4 && fabs(pv_z->at(0))<24. && pv_rho<2.0 && pv_isFake->at(0)==0) return true;
   return false;
 }
 
-bool trigger_handler::PassesJSONCut() const {
+bool ra4_handler::PassesJSONCut() const {
   if(sampleName.find("Run2012")!=std::string::npos){
     if(sampleName.find("PromptReco")!=std::string::npos
        &&!inJSON(VRunLumiPrompt, run, lumiblock)) return false;
@@ -469,7 +472,7 @@ bool trigger_handler::PassesJSONCut() const {
   }
 }
 
-bool trigger_handler::PassesMETCleaningCut() const{
+bool ra4_handler::PassesMETCleaningCut() const{
   //   cout<<", cschalofilter "<< cschalofilter_decision<<",  hbhefilter"<< hbhefilter_decision<<", hcallaserfilter "<<hcallaserfilter_decision 
   //       <<", ecalTPfilter "<< ecalTPfilter_decision <<",  trackingfailurefilter"<< trackingfailurefilter_decision 
   //       <<", eebadscfilter "<< eebadscfilter_decision  <<", scrapingVeto_decision "<<scrapingVeto_decision<<endl;
@@ -482,11 +485,11 @@ bool trigger_handler::PassesMETCleaningCut() const{
     && scrapingVeto_decision;
 }
 
-bool trigger_handler::IsMC(){
+bool ra4_handler::IsMC(){
   return (sampleName.find("Run201") == string::npos);
 }
 
-trigger_handler::trigger_handler(const std::string &fileName, const bool isList, const bool fastMode):
+ra4_handler::ra4_handler(const std::string &fileName, const bool isList, const bool fastMode):
   cfA(fileName, isList){
   if (fastMode) { // turn off unnecessary branches
     chainA.SetBranchStatus("triggerobject_*",0);
