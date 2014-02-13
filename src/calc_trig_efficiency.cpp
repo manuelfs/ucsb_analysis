@@ -14,9 +14,9 @@ int main(int argc, char *argv[]){
 
   std::string inFilename("");
   std::string masspoint("");
-  bool iscfA(true), isfast(true);
+  bool iscfA(true), isfast(true), printTriggers(false);
   int c(0), Nentries(0);
-  while((c=getopt(argc, argv, "n:i:m:cf"))!=-1){
+  while((c=getopt(argc, argv, "n:i:m:cft"))!=-1){
     switch(c){
     case 'n':
       Nentries=atoi(optarg);
@@ -33,12 +33,16 @@ int main(int argc, char *argv[]){
     case 'f':
       isfast=false;
       break;
+    case 't':
+      printTriggers=true;
+      break;
     }
   }
 
   std::string outFilename("");
   if(iscfA){
-    outFilename="out/"+inFilename+"_"+masspoint+".root";
+    if(printTriggers) outFilename="out/Triggers_"+inFilename+"_"+masspoint+".txt";
+    else outFilename="out/"+inFilename+"_"+masspoint+".root";
     inFilename="/net/cms2/cms2r0/cfA/"+inFilename+"/cfA_*"+masspoint+"*.root";
   }else{
     std::string baseName(inFilename);
@@ -54,7 +58,8 @@ int main(int argc, char *argv[]){
 	baseName.append("file_name_ended_with_slash");
       }
     }
-    outFilename="out/"+baseName+".root";
+    if(printTriggers) outFilename="out/Triggers_"+baseName+".txt";
+    else outFilename="out/"+baseName+".root";
     //cout << inFilename << "\n" << baseName << "\n" << outFilename << "\n";
   }
 
@@ -66,7 +71,8 @@ int main(int argc, char *argv[]){
   time(&curTime);
   cout<<"Getting started takes "<<difftime(curTime,startTime)<<" seconds. "
       <<"Calculating trigger efficiency with "<<Nentries<<" entries."<<endl;
-  tHandler.CalTrigEfficiency(Nentries, outFilename);
+  if(printTriggers) tHandler.PrintAllTriggers(outFilename);
+  else tHandler.CalTrigEfficiency(Nentries, outFilename);
 
   time(&curTime);
   cout<<Nentries<<" events took "<<difftime(curTime,startTime)<<" seconds"<<endl;

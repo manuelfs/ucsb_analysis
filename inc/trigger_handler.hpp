@@ -25,6 +25,7 @@ public:
   void CalTrigEfficiency(int Nentries, string outFilename);
   double getDZ(double vx, double vy, double vz, double px, double py, double pz, int firstGoodVertex);
   bool IsMC();
+  void PrintAllTriggers(string outFilename);
 
   // Cleaning
   bool PassesMETCleaningCut() const;
@@ -37,9 +38,10 @@ public:
   int GetNumGoodJets(double ptThresh=Def_ptThreshold) const;
   bool isGoodJet(const unsigned int ijet, const double ptThresh=Def_ptThreshold, const double etaThresh=Def_etaThreshold) const;
   bool passedPFJetSelection(const unsigned int ijet) const;
+  vector<int> GetJets(vector<int> electrons, vector<int> muons, float &HT);
 
   // Leptons
-  static const int LeptonPTThreshold       = 15;
+  static const int LeptonPTThreshold       = 15; // statics cannot be floats
   static const int MuonPTThreshold         = 20;
   static const int MuonVetoPTThreshold     = 15;
   static const int ElectronPTThreshold     = 20;
@@ -50,6 +52,8 @@ public:
   bool passedElectronSelection(uint iel);
   bool passedElectronVetoSelection(uint iel);
   float GetEffectiveArea(float SCEta, bool isMC);
+  vector<int> GetElectrons(bool doSignal = true);
+  vector<int> GetMuons(bool doSignal = true);
 
 };
 
