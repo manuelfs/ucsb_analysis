@@ -51,8 +51,10 @@ void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
     bool trigExists[] = {false, false};
     for(unsigned int tri(0); tri < trigger_decision->size(); tri++){
       trigname = trigger_name->at(tri);
-      for(int ind(0); ind<2; ind++)
-	if(trigname.Contains(TriggerName[ieff][ind])) trigExists[ind] = true;
+      for(int ind(0); ind<2; ind++){
+	trigEffName = "HLT_"; trigEffName += TriggerName[ieff][ind]; trigEffName += "_v";
+	if(trigname.Contains(trigEffName)) trigExists[ind] = true;
+      }
       if(trigExists[0] && trigExists[1]) break;
     }
     if(!trigExists[0] || !trigExists[1]) {
