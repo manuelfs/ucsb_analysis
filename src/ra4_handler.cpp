@@ -1,3 +1,4 @@
+#include "styles.hpp"
 #include "in_json_2012.hpp"
 #include "ra4_handler.hpp"
 #include "timer.hpp"
@@ -24,6 +25,7 @@ const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
 
 void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
 
+  styles style; style.setDefaultStyle();
   TFile outFile(outFilename.c_str(), "recreate");
   outFile.cd();
 
@@ -37,7 +39,7 @@ void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
 			      {"Ele27_WP80",               "CleanPFNoPUHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"},
 			      {"Ele27_WP80",               "CleanPFHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"}, 
 			      {"Ele27_WP80",               "CleanPFNoPUHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"}};
-  int nBins[] = {30,25}, TrigEffDecision[NTrigEfficiencies][2];
+  int nBins[] = {30,25}, TrigEffDecision[NTrigEfficiencies][2], TriggerIndex[NTrigEfficiencies][2];
   float Range[2][2] = {{0, 600}, {0, 250}};
 
   TH1F *hTrigEff[NTrigEfficiencies][3][2];
@@ -48,16 +50,16 @@ void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
   bool IsHtMet[NTrigEfficiencies][2], trigCombExists[NTrigEfficiencies], noTriggers = true;
   GetEntry(0);
   for(int ieff(0); ieff < NTrigEfficiencies; ieff++){
-    bool trigExists[] = {false, false};
+    TriggerIndex[ieff][0] = -1; TriggerIndex[ieff][1] = -1; 
     for(unsigned int tri(0); tri < trigger_decision->size(); tri++){
       trigname = trigger_name->at(tri);
       for(int ind(0); ind<2; ind++){
 	trigEffName = "HLT_"; trigEffName += TriggerName[ieff][ind]; trigEffName += "_v";
-	if(trigname.Contains(trigEffName)) trigExists[ind] = true;
+	if(trigname.Contains(trigEffName)) TriggerIndex[ieff][ind] = tri;
       }
-      if(trigExists[0] && trigExists[1]) break;
+      if(TriggerIndex[ieff][0]>=0 && TriggerIndex[ieff][1]>=0) break;
     }
-    if(!trigExists[0] || !trigExists[1]) {
+    if(TriggerIndex[ieff][0]<0 || TriggerIndex[ieff][1]<0) {
       trigCombExists[ieff] = false;
       continue;
     }
@@ -124,16 +126,15 @@ void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
       for(int ind(0); ind<2; ind++){
 	TrigEffDecision[ieff][ind] = 0;
 	trigEffName = "HLT_"; trigEffName += TriggerName[ieff][ind]; trigEffName += "_v";
-	for(unsigned int tri(0); tri < trigger_decision->size(); tri++){
-	  trigname = trigger_name->at(tri);
-	  if(trigname.BeginsWith(trigEffName)) {
-	    TrigEffDecision[ieff][ind]++;  // Trigger exists >=1
-	    if(trigger_decision->at(tri)==1) {
-	      TrigEffDecision[ieff][ind]++;  // Trigger passes ==2
-	    }
-	    continue;
+	int tri = TriggerIndex[ieff][ind];
+	trigname = trigger_name->at(tri);
+	if(trigname.BeginsWith(trigEffName)) {
+	  TrigEffDecision[ieff][ind]++;  // Trigger exists >=1
+	  if(trigger_decision->at(tri)==1) {
+	    TrigEffDecision[ieff][ind]++;  // Trigger passes ==2
 	  }
-	} // Loop over all triggers
+	  continue;
+	}
       } // Loop over RefTrig and Target Trig
 
       if(TrigEffDecision[ieff][0]==2 && TrigEffDecision[ieff][1]>=1){ // Reference passed, trigger exist

@@ -1,20 +1,10 @@
 //----------------------------------------------------------------------------
-// styles.cpp description:
-//      styles - Class to set default plotting styles, read from a text file
-//  
-// Author List:
-//      Manuel Franco Sevilla                     Stanford University/UCSB
-//      Wells Wulsin                              Stanford University
-//      Jochen Dingfelder                         SLAC
-//
-// History:
-//      14/02/15  manuelf -- Got rid of RooFit dependences
-//      10/10/22  manuelf -- Adapted to Donut's needs
-//      10/08/09  wulsin  -- Copied from SetStyles.C.  Made into a proper class.  
+// styles - Class to set default plotting styles, read from a text file
 //----------------------------------------------------------------------------
 
-#ifndef STYLES_HH
-#define STYLES_HH
+#ifndef INT_ROOT
+  #include "styles.hpp"
+#endif
 
 #include "TCanvas.h"
 #include "TFile.h"
@@ -27,70 +17,82 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <cmath>
 
 using std::cout;
 using std::endl;
 
-class styles {
-public: 
-  styles();  
-  void setPadsStyle(int numberPads = 1);
-  void testGlobalStyle(bool fixY = true, float scale = 1000.); 
-  void setGlobalStyle();
-  void applyStyle();
-  void printValues();
-  void fixYAxis(TH1 *h, TPad *pad);
-  void styleHist(TH1 *h, Int_t color = 1, Int_t fillstyle = 0,
-		 Int_t symbol = 8,Double_t size = 0.7, Int_t width = 1);
-  void setMarkers(TH1 *h, float Msize=0.6, int Mstyle=20) ;
-  void setTitles(TH1 *h, TString xTitle="", TString yTitle="", TString Left="", TString Right="");
-  void setTitleSizes(TH1 *h,  float size, float lsize, int font=62, 
-		     float xoff=1., float yoff=1., int divisions=405);
-  void parseConfFile(TString group, TString fnames[], float *fvalues[], int nFloat, 
-		     TString inames[], int *ivalues[], int nInt);
-
-  TString confFile;
-  int nFont, nPads, nDivisions;
-  int CanvasW, CanvasH;
-  float TextSize, TitleSize, LabelSize, xTitleOffset, yTitleOffset;
-  float PadRightMargin, PadBottomMargin, PadLeftMargin, PadTopMargin;
-};
-
-styles::styles() {
-  confFile = "txt/plot_configuration.txt";
+styles::styles(TString group) {
+  confFile = "txt/plot_styles.txt";
   TString inames[] = {"nFont", "nDivisions"};
   int *ivalues[] = {&nFont, &nDivisions};
-  parseConfFile("General", 0, 0, 0, inames, ivalues, 2);
-  nPads      = 1;
+  parseStyleFile("General", 0, 0, 0, inames, ivalues, 2);
+  Group = group;
+  nPads = 1;
+
+  readGroupStyle();
 }
 
-// Default styles for each possible number of pads
-// The values of PadLeftMargin and yTitleOffset are set in between the optimal
-// values for 4 and 3 digits in the y axis
-void styles::setPadsStyle(int numberPads) {
-  nPads = abs(numberPads);
-  TString Section = "Pads_"; Section += nPads;
-  if(numberPads<0) Section += "b";
+void styles::setDefaultStyle() {
+  setGlobalStyle();
+  gStyle->SetCanvasDefW(CanvasW);
+  gStyle->SetCanvasDefH(CanvasH);
+  gStyle->SetTextSize(TextSize);            // Set global text size
+  gStyle->SetTitleSize(TitleSize,"xy");     // Set the 2 axes title size
+  gStyle->SetLabelSize(LabelSize,"xy");     // Set the 2 axes label size
 
+  gStyle->SetTitleOffset(xTitleOffset,"x");     
+  gStyle->SetTitleOffset(yTitleOffset,"y");     
+  gStyle->SetPadRightMargin (PadRightMargin);    
+  gStyle->SetPadBottomMargin(PadBottomMargin); 
+  gStyle->SetPadTopMargin(PadTopMargin); 
+  gStyle->SetPadLeftMargin  (PadLeftMargin); 
+  gStyle->SetNdivisions(nDivisions, "xy");   // 5 primary ticks and 4 secondary ticks
+
+  gStyle->SetTitleFont(nFont,"xy");          // Set the all 2 axes title font
+  gStyle->SetLabelFont(nFont,"xy");          // Set the all 2 axes label font
+  gStyle->SetTextFont(nFont);                // Set global text font
+}
+
+void styles::setHistoStyle(TH1 *h) {
+  h->SetTitleSize(TitleSize,"xy");     // Set the 2 axes title size
+  h->SetLabelSize(LabelSize,"xy");     // Set the 2 axes label size
+
+  h->SetTitleOffset(xTitleOffset,"x");     
+  h->SetTitleOffset(yTitleOffset,"y");     
+  h->SetNdivisions(nDivisions, "xy");   // 5 primary ticks and 4 secondary ticks
+  h->SetTitleFont(nFont,"xy");          // Set the all 2 axes title font
+  h->SetLabelFont(nFont,"xy");          // Set the all 2 axes label font
+}
+
+// Set default styles globally.   
+void styles::setGlobalStyle() {
+  gStyle->SetPalette(1);              // Decent colors for 2D plots
+  gStyle->SetOptStat(0);              // No Stats box
+  gStyle->SetPadTickX(0);             // No ticks at the right
+  gStyle->SetPadTickY(0);             // No ticks at the top
+}
+
+// Set default style for the specific group 
+void styles::readGroupStyle() {
   TString inames[] = {"CanvasW", "CanvasH"};
   TString fnames[] = {"TextSize", "TitleSize", "LabelSize", "PadRightMargin", "PadTopMargin", "PadBottomMargin",
 		      "xTitleOffset", "PadLeftMargin", "yTitleOffset"};
   int   *ivalues[] = {&CanvasW, &CanvasH};
   float *fvalues[] = {&TextSize,&TitleSize,&LabelSize,&PadRightMargin,&PadTopMargin,&PadBottomMargin,
 		      &xTitleOffset,&PadLeftMargin,&yTitleOffset};
-  parseConfFile(Section, fnames, fvalues, 9, inames, ivalues, 2);
+  parseStyleFile(Group, fnames, fvalues, 9, inames, ivalues, 2);
 }
 
-// ----------------------------------------------------------------------
+// Fix for y axes that have too much/little space for the label due to number of digits
 void styles::fixYAxis(TH1 *h, TPad *pad){
   float maxi = h->GetMaximum()*1.15;
   int digits = (int)(log(maxi)/log(10.)+0.001)+1;
   if(digits<2) digits = 2;
-  TString Section = "Pads_"; Section += nPads;
-  Section += "_Digits_"; Section += digits;  
+  TString Section = Group; Section += "_Digits_"; Section += digits;  
   TString fnames[] = {"PadLeftMargin", "yTitleOffset"};
   float *fvalues[] = {&PadLeftMargin, &yTitleOffset};
-  parseConfFile(Section, fnames, fvalues, 2, 0, 0, 0);
+  parseStyleFile(Section, fnames, fvalues, 2, 0, 0, 0);
 
   h->SetTitleOffset(yTitleOffset,"y");
   pad->SetLeftMargin(PadLeftMargin);
@@ -99,7 +101,7 @@ void styles::fixYAxis(TH1 *h, TPad *pad){
 // Test the global style settings for a generic histogram.  
 void styles::testGlobalStyle(bool fixY, float scale) {
   
-  setPadsStyle(nPads); setGlobalStyle(); applyStyle();
+  readGroupStyle(); setGlobalStyle(); setDefaultStyle();
   
   TH1* h = new TH1F("h", "h", 50, 0, 50);
   TH1* hc[6];
@@ -130,35 +132,6 @@ void styles::testGlobalStyle(bool fixY, float scale) {
   TString epsName = "babar_code/styles/Plot_"; epsName += nPads; epsName += "Pads.eps";
   c.Print(epsName);
   
-}
-
-void styles::applyStyle() {
-  setGlobalStyle();
-  gStyle->SetCanvasDefW(CanvasW);
-  gStyle->SetCanvasDefH(CanvasH);
-  gStyle->SetTextSize(TextSize);            // Set global text size
-  gStyle->SetTitleSize(TitleSize,"xy");     // Set the 2 axes title size
-  gStyle->SetLabelSize(LabelSize,"xy");     // Set the 2 axes label size
-
-  gStyle->SetTitleOffset(xTitleOffset,"x");     
-  gStyle->SetTitleOffset(yTitleOffset,"y");     
-  gStyle->SetPadRightMargin (PadRightMargin);    
-  gStyle->SetPadBottomMargin(PadBottomMargin); 
-  gStyle->SetPadTopMargin(PadTopMargin); 
-  gStyle->SetPadLeftMargin  (PadLeftMargin); 
-  gStyle->SetNdivisions(nDivisions, "xy");   // 5 primary ticks and 4 secondary ticks
-
-  gStyle->SetTitleFont(nFont,"xy");          // Set the all 2 axes title font
-  gStyle->SetLabelFont(nFont,"xy");          // Set the all 2 axes label font
-  gStyle->SetTextFont(nFont);                // Set global text font
-}
-
-// Set default styles globally.   
-void styles::setGlobalStyle() {
-  gStyle->SetPalette(1);              // Decent colors for 2D plots
-  gStyle->SetOptStat(0);              // No Stats box
-  gStyle->SetPadTickX(0);             // No ticks at the right
-  gStyle->SetPadTickY(0);             // No ticks at the top
 }
 
 void styles::printValues() {
@@ -227,7 +200,7 @@ void styles::setTitleSizes(TH1 *h,  float size, float lsize, int font,
   }
 }
 
-void styles::parseConfFile(TString group, TString fnames[], float *fvalues[], int nFloat, 
+void styles::parseStyleFile(TString group, TString fnames[], float *fvalues[], int nFloat, 
 			   TString inames[], int *ivalues[], int nInt){
   ifstream file(confFile);
   TString word, s_value;
@@ -257,5 +230,3 @@ void styles::parseConfFile(TString group, TString fnames[], float *fvalues[], in
   } // Loop over all words
 }
 
-
-#endif	/* STYLES_HH */

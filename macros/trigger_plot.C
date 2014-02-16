@@ -1,5 +1,9 @@
 // trigger_plot.C: Plots and fits with an error function trigger efficiency curves
 
+#define INT_ROOT
+#include "inc/styles.hpp"
+#include "src/styles.cpp"
+
 #include <fstream>
 #include <iostream>
 #include <cmath>
@@ -16,10 +20,11 @@
 #include "TString.h"
 #include "TSystem.h"
 #include "TH1F.h"
+#include "TH2F.h"
 #include "TMath.h"
 #include "TLatex.h"
 #include "TGraphAsymmErrors.h"
-#include "macros/styles.cpp"
+
 
 #define NFiles 1
 
@@ -65,7 +70,7 @@ TString ParseSampleName(TString file, TString &energy){
 }
 
 void trigger_plot(TString FileName){
-  styles style; style.setPadsStyle(1); style.applyStyle();
+  styles style; style.setDefaultStyle();
   gStyle->SetOptFit(1);
   gStyle->SetStatX(0.95);
   gStyle->SetStatY(0.35);
@@ -77,9 +82,10 @@ void trigger_plot(TString FileName){
   int color = 1;
   TString sampleName = ParseSampleName(FileName, energy), sampleSimple;
   sampleSimple = sampleName; sampleSimple += "_"; sampleSimple += energy; sampleSimple += "TeV_";
+  sampleSimple.ReplaceAll(" ", "_");
   sampleName += " @ "; sampleName += energy; sampleName += " TeV";
 
-  //Loop over all variables  
+  //Loop over HT and MET 1D histograms 
   for(int obj(0); obj < file.GetListOfKeys()->GetSize(); ++obj){
     const std::string obj_name(file.GetListOfKeys()->At(obj)->GetName());
     VarName = obj_name;
@@ -124,5 +130,30 @@ void trigger_plot(TString FileName){
     can.SaveAs(PlotName);
   } //Loop over all variables
 
+  //Loop over 2D efficiency histograms
+  for(int obj(0); obj < file.GetListOfKeys()->GetSize(); ++obj){
+    const std::string obj_name(file.GetListOfKeys()->At(obj)->GetName());
+    VarName = obj_name;
+    if(!VarName.Contains("Eff_HTMET_")) continue;
+
+    TH2F  hEffi = *(static_cast<TH2F*>(file.GetKey(VarName,1)->ReadObj()));
+    style.setHistoStyle(&hEffi);
+    Title=hEffi.GetTitle();
+    Title.Remove(0, Title.First("_")+1);
+    Title.Remove(0, Title.First("_")+1);
+    RefTrigger = Title;
+    RefTrigger.Remove(RefTrigger.First("Vs")-1, RefTrigger.Sizeof()+1);
+    Title.Remove(0, Title.First("Vs")+3);    
+    Title.Insert(0,"#font[22]{");
+    Title += "} #rightarrow Ref: #font[22]{"; Title += RefTrigger; Title += "}";
+    hEffi.SetTitle(Title);
+    hEffi.SetXTitle("H_{T} (GeV)"); 
+    hEffi.SetYTitle("E_{T,miss} (GeV)"); 
+    hEffi.SetMinimum(-0.01);
+    hEffi.Draw("colz4");
+    PlotName = "plots/"; PlotName += sampleSimple; PlotName += VarName; PlotName += ".pdf";
+    PlotName.ReplaceAll("#bar{t}","tbar");
+    can.SaveAs(PlotName);
+  }
 }
   
