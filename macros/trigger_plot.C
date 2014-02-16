@@ -1,18 +1,12 @@
-#include "inc/ucsb_utils.hpp"
-#include "src/ucsb_utils.cpp"
+// trigger_plot.C: Plots and fits with an error function trigger efficiency curves
+
 #include <fstream>
 #include <iostream>
 #include <cmath>
-#include <vector>
-#include <algorithm>
 #include <string>
 #include <sstream>
 #include "TFile.h"
 #include "TF1.h"
-#include "TH1D.h"
-#include "TH2D.h"
-#include "THStack.h"
-#include "TTree.h"
 #include "TColor.h"
 #include "TStyle.h"
 #include "TCanvas.h"
@@ -20,13 +14,12 @@
 #include "TKey.h"
 #include "TList.h"
 #include "TString.h"
-#include "TChain.h"
 #include "TSystem.h"
-#include "TStyle.h"
-#include "TBranch.h"
 #include "TH1F.h"
+#include "TMath.h"
 #include "TLatex.h"
 #include "TGraphAsymmErrors.h"
+#include "macros/styles.cpp"
 
 #define NFiles 1
 
@@ -72,27 +65,18 @@ TString ParseSampleName(TString file, TString &energy){
 }
 
 void trigger_plot(TString FileName){
- 
-  TFile file(FileName);
-  
-  gStyle->SetCanvasDefW(1000);
-  gStyle->SetCanvasDefH(600);
-
-  gStyle->SetHatchesLineWidth(2);
-  gStyle->SetOptStat(0);
-  gStyle->SetPadRightMargin(0.038);
-  gStyle->SetPadTopMargin(0.035);
-  gStyle->SetPadBottomMargin(0.12);
-  gStyle->SetPadLeftMargin(0.1);
+  styles style; style.setPadsStyle(1); style.applyStyle();
   gStyle->SetOptFit(1);
   gStyle->SetStatX(0.95);
   gStyle->SetStatY(0.35);
-
+ 
+  TFile file(FileName);
   TCanvas can;
   TLatex label; label.SetTextSize(0.05); label.SetTextFont(22); label.SetTextAlign(21); label.SetNDC(true);
-  TString xTitle, VarName, yTitle, Title, RefTrigger, Pname, text, energy;
+  TString xTitle, VarName, yTitle, Title, RefTrigger, PlotName, text, energy;
   int color = 1;
-  TString sampleName = ParseSampleName(FileName, energy);
+  TString sampleName = ParseSampleName(FileName, energy), sampleSimple;
+  sampleSimple = sampleName; sampleSimple += "_"; sampleSimple += energy; sampleSimple += "TeV_";
   sampleName += " @ "; sampleName += energy; sampleName += " TeV";
 
   //Loop over all variables  
@@ -104,7 +88,6 @@ void trigger_plot(TString FileName){
     TH1F  hNum = *(static_cast<TH1F*>(file.GetKey(VarName,1)->ReadObj()));
     VarName.ReplaceAll("Num_", "Den_");
     TH1F  hDen = *(static_cast<TH1F*>(file.GetKey(VarName,1)->ReadObj()));
-
 				   
     TGraphAsymmErrors hEffi = CalcEffi(&hNum, &hDen);
     hEffi.SetLineColor(color);  hEffi.SetMarkerColor(color);
@@ -127,10 +110,6 @@ void trigger_plot(TString FileName){
     hEffi.SetTitle(Title);
     hEffi.GetXaxis()->SetTitle(xTitle);
     hEffi.GetYaxis()->SetTitle(yTitle);
-    hEffi.GetXaxis()->SetTitleSize(0.05);   
-    hEffi.GetXaxis()->SetLabelSize(0.05);   
-    hEffi.GetYaxis()->SetTitleSize(0.05);   
-    hEffi.GetYaxis()->SetLabelSize(0.05);   
     //hEffi.GetXaxis()->SetRange(5, hEffi.GetXaxis()->GetNbins()-4);   
     double maxhisto(0);  
     if(hEffi.GetMaximum() > maxhisto) maxhisto = hEffi.GetMaximum();
@@ -138,9 +117,11 @@ void trigger_plot(TString FileName){
     label.DrawLatex(0.78, 0.38, sampleName);
  
     VarName.ReplaceAll("Den_", "Eff_");
-    Pname = "plots/"; Pname += VarName; Pname += ".pdf";
+    
+    PlotName = "plots/"; PlotName += sampleSimple; PlotName += VarName; PlotName += ".pdf";
+    PlotName.ReplaceAll("#bar{t}","tbar");
     can.SetLogy(0);    
-    can.SaveAs(Pname);
+    can.SaveAs(PlotName);
   } //Loop over all variables
 
 }
