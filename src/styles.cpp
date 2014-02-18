@@ -38,8 +38,8 @@ void styles::setDefaultStyle() {
   gStyle->SetCanvasDefW(CanvasW);
   gStyle->SetCanvasDefH(CanvasH);
   gStyle->SetTextSize(TextSize);            // Set global text size
-  gStyle->SetTitleSize(TitleSize,"xy");     // Set the 2 axes title size
-  gStyle->SetLabelSize(LabelSize,"xy");     // Set the 2 axes label size
+  gStyle->SetTitleSize(TitleSize,"xyz");     // Set the 2 axes title size
+  gStyle->SetLabelSize(LabelSize,"xyz");     // Set the 2 axes label size
 
   gStyle->SetTitleOffset(xTitleOffset,"x");     
   gStyle->SetTitleOffset(yTitleOffset,"y");     
@@ -47,22 +47,22 @@ void styles::setDefaultStyle() {
   gStyle->SetPadBottomMargin(PadBottomMargin); 
   gStyle->SetPadTopMargin(PadTopMargin); 
   gStyle->SetPadLeftMargin  (PadLeftMargin); 
-  gStyle->SetNdivisions(nDivisions, "xy");   // 5 primary ticks and 4 secondary ticks
+  gStyle->SetNdivisions(nDivisions, "xyz");   // 5 primary ticks and 4 secondary ticks
 
-  gStyle->SetTitleFont(nFont,"xy");          // Set the all 2 axes title font
-  gStyle->SetLabelFont(nFont,"xy");          // Set the all 2 axes label font
+  gStyle->SetTitleFont(nFont,"xyz");          // Set the all 2 axes title font
+  gStyle->SetLabelFont(nFont,"xyz");          // Set the all 2 axes label font
   gStyle->SetTextFont(nFont);                // Set global text font
 }
 
 void styles::setHistoStyle(TH1 *h) {
-  h->SetTitleSize(TitleSize,"xy");     // Set the 2 axes title size
-  h->SetLabelSize(LabelSize,"xy");     // Set the 2 axes label size
+  h->SetTitleSize(TitleSize,"xyz");     // Set the 2 axes title size
+  h->SetLabelSize(LabelSize,"xyz");     // Set the 2 axes label size
 
   h->SetTitleOffset(xTitleOffset,"x");     
   h->SetTitleOffset(yTitleOffset,"y");     
-  h->SetNdivisions(nDivisions, "xy");   // 5 primary ticks and 4 secondary ticks
-  h->SetTitleFont(nFont,"xy");          // Set the all 2 axes title font
-  h->SetLabelFont(nFont,"xy");          // Set the all 2 axes label font
+  h->SetNdivisions(nDivisions, "xyz");   // 5 primary ticks and 4 secondary ticks
+  h->SetTitleFont(nFont,"xyz");          // Set the all 2 axes title font
+  h->SetLabelFont(nFont,"xyz");          // Set the all 2 axes label font
 }
 
 // Set default styles globally.   
@@ -71,6 +71,11 @@ void styles::setGlobalStyle() {
   gStyle->SetOptStat(0);              // No Stats box
   gStyle->SetPadTickX(0);             // No ticks at the right
   gStyle->SetPadTickY(0);             // No ticks at the top
+}
+
+void styles::setGroup(TString group){
+  Group = group;
+  readGroupStyle();
 }
 
 // Set default style for the specific group 

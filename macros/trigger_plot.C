@@ -69,91 +69,82 @@ TString ParseSampleName(TString file, TString &energy){
   return sample;
 }
 
-void trigger_plot(TString FileName){
-  styles style; style.setDefaultStyle();
+void makeTitle(TString &Title){
+  Title.Remove(0, Title.First("_")+1);
+  Title.Remove(0, Title.First("_")+1);
+  TString RefTrigger = Title;
+  RefTrigger.Remove(RefTrigger.First("Vs")-1, RefTrigger.Sizeof()+1);
+  Title.Remove(0, Title.First("Vs")+3);    
+  Title.Insert(0,"#font[22]{");
+  Title += "} #rightarrow Ref: #font[22]{"; Title += RefTrigger; Title += "}";
+}
+
+void trigger_plot(TString FileName, bool is2D = false){
+  styles style("Standard"); 
+  if(is2D) style.setGroup("2D");
+  style.setDefaultStyle();
   gStyle->SetOptFit(1);
   gStyle->SetStatX(0.95);
   gStyle->SetStatY(0.35);
  
   TFile file(FileName);
+  TGraphAsymmErrors hEffi; TH2F hEffi2D;
   TCanvas can;
   TLatex label; label.SetTextSize(0.05); label.SetTextFont(22); label.SetTextAlign(21); label.SetNDC(true);
-  TString xTitle, VarName, yTitle, Title, RefTrigger, PlotName, text, energy;
+  TString xTitle, VarName, yTitle, Title, PlotName, text, energy;
   int color = 1;
   TString sampleName = ParseSampleName(FileName, energy), sampleSimple;
   sampleSimple = sampleName; sampleSimple += "_"; sampleSimple += energy; sampleSimple += "TeV_";
   sampleSimple.ReplaceAll(" ", "_");
   sampleName += " @ "; sampleName += energy; sampleName += " TeV";
 
-  //Loop over HT and MET 1D histograms 
+  //Loop over HT and MET 1D or Efficiency 2D histograms
   for(int obj(0); obj < file.GetListOfKeys()->GetSize(); ++obj){
     const std::string obj_name(file.GetListOfKeys()->At(obj)->GetName());
     VarName = obj_name;
-    if(!VarName.Contains("Num_") || (!VarName.Contains("_HT_") && !VarName.Contains("_MET_"))) continue;
+    if(is2D){
+      if(!VarName.Contains("Eff_HTMET_")) continue;
 
-    TH1F  hNum = *(static_cast<TH1F*>(file.GetKey(VarName,1)->ReadObj()));
-    VarName.ReplaceAll("Num_", "Den_");
-    TH1F  hDen = *(static_cast<TH1F*>(file.GetKey(VarName,1)->ReadObj()));
+      hEffi2D = *(static_cast<TH2F*>(file.GetKey(VarName,1)->ReadObj()));
+      style.setHistoStyle(&hEffi2D);
+      Title=hEffi2D.GetTitle();
+      makeTitle(Title);
+      hEffi2D.SetTitle(Title);
+      hEffi2D.SetXTitle("H_{T} (GeV)"); 
+      hEffi2D.SetYTitle("E_{T,miss} (GeV)"); 
+      hEffi2D.SetMinimum(-0.01);
+      hEffi2D.Draw("colz4");
+    } else {
+      if(!VarName.Contains("Num_") || (!VarName.Contains("_HT_") && !VarName.Contains("_MET_"))) continue;
+
+      TH1F  hNum = *(static_cast<TH1F*>(file.GetKey(VarName,1)->ReadObj()));
+      VarName.ReplaceAll("Num_", "Den_");
+      TH1F  hDen = *(static_cast<TH1F*>(file.GetKey(VarName,1)->ReadObj()));
+      VarName.ReplaceAll("Den_", "Eff_");
 				   
-    TGraphAsymmErrors hEffi = CalcEffi(&hNum, &hDen);
-    hEffi.SetLineColor(color);  hEffi.SetMarkerColor(color);
-    hEffi.SetMarkerStyle(20); hEffi.SetMarkerSize(1.5);
-    hEffi.SetLineWidth(2);
-
-    Title=hNum.GetTitle();
-    Title.Remove(0, Title.First("_")+1);
-    Title.Remove(0, Title.First("_")+1);
-    RefTrigger = Title;
-    RefTrigger.Remove(RefTrigger.First("Vs")-1, RefTrigger.Sizeof()+1);
-    Title.Remove(0, Title.First("Vs")+3);    
-    Title.Insert(0,"#font[22]{");
-    Title += "} #rightarrow Ref: #font[22]{"; Title += RefTrigger; Title += "}";
-    yTitle = "Trigger efficiency";
-    xTitle = ""; 
-    if(VarName.Contains("HT")) xTitle = "H_{T}"; 
-    if(VarName.Contains("MET")) xTitle = "E_{T,miss}";
-    xTitle+=" (GeV)";
-    hEffi.SetTitle(Title);
-    hEffi.GetXaxis()->SetTitle(xTitle);
-    hEffi.GetYaxis()->SetTitle(yTitle);
-    //hEffi.GetXaxis()->SetRange(5, hEffi.GetXaxis()->GetNbins()-4);   
-    double maxhisto(0);  
-    if(hEffi.GetMaximum() > maxhisto) maxhisto = hEffi.GetMaximum();
-    hEffi.Draw("AP");
-    label.DrawLatex(0.78, 0.38, sampleName);
- 
-    VarName.ReplaceAll("Den_", "Eff_");
-    
+      hEffi = CalcEffi(&hNum, &hDen);
+      hEffi.SetLineColor(color);  hEffi.SetMarkerColor(color);
+      hEffi.SetMarkerStyle(20); hEffi.SetMarkerSize(1.5);
+      hEffi.SetLineWidth(2);
+      Title=hNum.GetTitle();
+      makeTitle(Title);
+      yTitle = "Trigger efficiency";
+      xTitle = ""; 
+      if(VarName.Contains("HT")) xTitle = "H_{T}"; 
+      if(VarName.Contains("MET")) xTitle = "E_{T,miss}";
+      xTitle+=" (GeV)";
+      hEffi.SetTitle(Title);
+      hEffi.GetXaxis()->SetTitle(xTitle);
+      hEffi.GetYaxis()->SetTitle(yTitle);
+      //hEffi.GetXaxis()->SetRange(5, hEffi.GetXaxis()->GetNbins()-4);   
+      double maxhisto(0);  
+      if(hEffi.GetMaximum() > maxhisto) maxhisto = hEffi.GetMaximum();
+      hEffi.Draw("AP");
+      label.DrawLatex(0.78, 0.38, sampleName);
+     }
     PlotName = "plots/"; PlotName += sampleSimple; PlotName += VarName; PlotName += ".pdf";
     PlotName.ReplaceAll("#bar{t}","tbar");
-    can.SetLogy(0);    
     can.SaveAs(PlotName);
   } //Loop over all variables
-
-  //Loop over 2D efficiency histograms
-  for(int obj(0); obj < file.GetListOfKeys()->GetSize(); ++obj){
-    const std::string obj_name(file.GetListOfKeys()->At(obj)->GetName());
-    VarName = obj_name;
-    if(!VarName.Contains("Eff_HTMET_")) continue;
-
-    TH2F  hEffi = *(static_cast<TH2F*>(file.GetKey(VarName,1)->ReadObj()));
-    style.setHistoStyle(&hEffi);
-    Title=hEffi.GetTitle();
-    Title.Remove(0, Title.First("_")+1);
-    Title.Remove(0, Title.First("_")+1);
-    RefTrigger = Title;
-    RefTrigger.Remove(RefTrigger.First("Vs")-1, RefTrigger.Sizeof()+1);
-    Title.Remove(0, Title.First("Vs")+3);    
-    Title.Insert(0,"#font[22]{");
-    Title += "} #rightarrow Ref: #font[22]{"; Title += RefTrigger; Title += "}";
-    hEffi.SetTitle(Title);
-    hEffi.SetXTitle("H_{T} (GeV)"); 
-    hEffi.SetYTitle("E_{T,miss} (GeV)"); 
-    hEffi.SetMinimum(-0.01);
-    hEffi.Draw("colz4");
-    PlotName = "plots/"; PlotName += sampleSimple; PlotName += VarName; PlotName += ".pdf";
-    PlotName.ReplaceAll("#bar{t}","tbar");
-    can.SaveAs(PlotName);
-  }
 }
   
