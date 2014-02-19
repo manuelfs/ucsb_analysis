@@ -34,7 +34,7 @@ float dR(float eta1, float eta2, float phi1, float phi2) {
   return sqrt(pow(eta1-eta2, 2) + pow(fabs(deltaphi(phi1,phi2)), 2)) ;
 }
 
-TString RoundNumber(double num, int decimals, double denom){
+TString RoundNumber(double num, int decimals, double denom=1){
   if(denom==0) return " - ";
   double neg = 1; if(num*denom<0) neg = -1;
   num /= neg*denom; num += 0.5*pow(10.,-decimals);
@@ -55,3 +55,29 @@ TString RoundNumber(double num, int decimals, double denom){
   return result;
 }
 
+TString ParseSampleName(TString file, TString &energy){
+  TString sample = file;
+  energy = file;
+  if(sample.Contains("2012")){
+    sample.Remove(0, sample.First("2012"));
+    sample.Remove(sample.Index("-"), sample.Sizeof());
+    sample.Insert(0,"Data ");
+    energy = "8";
+  } else {
+    energy.Remove(energy.Index("TeV"), energy.Sizeof());
+    energy.Remove(0, energy.Last('_')+1);
+  }
+  if(sample.Contains("TT")) sample = "t#bar{t}";
+  if(sample.Contains("SMS")) sample = "T1ttt";
+
+  return sample;
+}
+
+TString GetSampleEnergy(TString file, TString &sampleSimple){
+  TString energy;
+  TString sampleName = ParseSampleName(file, energy);
+  sampleSimple = sampleName; sampleSimple += "_"; sampleSimple += energy; sampleSimple += "TeV_";
+  sampleSimple.ReplaceAll(" ", "_");
+  sampleName += " @ "; sampleName += energy; sampleName += " TeV";
+  return sampleName;
+}
