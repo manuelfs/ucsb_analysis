@@ -18,10 +18,11 @@ vpath %.exe $(EXEDIR)
 vpath %.d $(MAKEDIR)
 
 # Add new executables to this list
-all: calc_trig_efficiency.exe
+all: calc_trig_efficiency.exe make_tree.exe
 
 # List any object files your executable need to be linked with
 $(EXEDIR)/calc_trig_efficiency.exe: calc_trig_efficiency.o ra4_handler.o cfa.o in_json_2012.o ucsb_utils.o timer.o styles.o
+$(EXEDIR)/make_tree.exe: make_tree.o ra4_handler.o cfa.o in_json_2012.o ucsb_utils.o timer.o styles.o
 
 -include $(addsuffix .d,$(addprefix $(MAKEDIR)/,$(notdir $(basename $(wildcard $(SRCDIR)/*.cpp)))))
 

@@ -26,7 +26,7 @@
 #include "TLatex.h"
 #include "TGraphAsymmErrors.h"
 
-#define NFiles 3
+#define NFiles 4
 
 using namespace std;
 using std::cout;
@@ -70,9 +70,11 @@ void compare_efficiency(){
   //Files
   TString FileNames[] = {"Archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68_1150_800.root",
 			 "Archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1145_800.root",
+			 "Archive/SingleMu_Run2012B-13Jul2012-v1_AOD_UCSB1554ra4_v66_.root",
 			 "Archive/SingleMu_Run2012D-PromptReco-v1_AOD_UCSB1628ra4_v67_.root"};
   
-  TString legNames[] = {"T1tttt(1150,800) @ 8 TeV ","T1tttt(1145,800) @ 14 TeV ", "Data 2012D @ 8 TeV ", "T1tttt(1145,500) @ 14 TeV ",
+  TString legNames[] = {"T1tttt(1150,800) @ 8 TeV ","T1tttt(1145,800) @ 14 TeV ", 
+			"Data 2012B @ 8 TeV ", "Data 2012D @ 8 TeV", "T1tttt(1145,500) @ 14 TeV ",
 			"ttbar_ll_8TeV", "ttbar_hh_8TeV", "t#bar{t} @ 8 TeV ", "t#bar{t} @ 13 TeV "}, Pname;
   TFile *histosFile[NFiles];
   vector<TString> VarName[NFiles];
@@ -103,7 +105,7 @@ void compare_efficiency(){
     } // Loop over file 0 variables
   }
   
-  int colors[] = {2, 4, 1};
+  int colors[] = {2, 4, 1, 8};
 
   TGraphAsymmErrors hEffi[NFiles];
   TCanvas can;
@@ -112,8 +114,8 @@ void compare_efficiency(){
   //Loop over all common variables  
   for(unsigned int var(0); var < VarName[0].size(); var++) {
     if(iVarName[var] < NFiles || (!VarName[0][var].Contains("Num_HT_") && !VarName[0][var].Contains("Num_MET_"))) continue;
-    TLegend leg(0.52,0.12,0.97,0.35);
-    leg.SetTextSize(0.055); leg.SetFillColor(0); leg.SetBorderSize(0);
+    TLegend leg(0.45,0.14,0.97,0.39);
+    leg.SetTextSize(0.052); leg.SetFillColor(0); leg.SetBorderSize(0);
     leg.SetTextFont(132); leg.SetFillStyle(0);
     for(int iFiles(0); iFiles < NFiles; iFiles++){
       TH1F  hNum = *(static_cast<TH1F*>(histosFile[iFiles]->GetKey(VarName[iFiles][var],1)->ReadObj()));
@@ -130,9 +132,15 @@ void compare_efficiency(){
       makeTitle(Title);
       yTitle = "Trigger efficiency";
       xTitle = ""; 
-      if(VarName[iFiles][var].Contains("_HT_")) xTitle = "H_{T}"; 
-      if(VarName[iFiles][var].Contains("_MET_")) xTitle = "E_{T,miss}";
-      xTitle+=" (GeV)";
+      if(VarName[iFiles][var].Contains("_HT_")) {
+	xTitle = "H_{T}"; 
+	if(legNames[iFiles].Contains("2012D")) legNames[iFiles] = "Data 2012D @ 8 TeV (NoPUHT)";
+      }
+      if(VarName[iFiles][var].Contains("_MET_")) {
+	xTitle = "E_{T,miss}";
+ 	if(legNames[iFiles].Contains("2012D")) legNames[iFiles] = "Data 2012D @ 8 TeV";
+      }
+     xTitle+=" (GeV)";
       hEffi[iFiles].SetTitle(Title);
       hEffi[iFiles].GetXaxis()->SetTitle(xTitle);
       hEffi[iFiles].GetYaxis()->SetTitle(yTitle);

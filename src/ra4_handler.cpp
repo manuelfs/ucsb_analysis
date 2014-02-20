@@ -15,6 +15,7 @@
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TCanvas.h"
+#include "TTree.h"
 
 using namespace std;
 const std::vector<std::vector<int> > VRunLumiPrompt(MakeVRunLumi("Golden"));
@@ -22,6 +23,128 @@ const std::vector<std::vector<int> > VRunLumi24Aug(MakeVRunLumi("24Aug"));
 const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
 
 #define NTrigEfficiencies 14
+#define NTrigReduced 19
+
+void ra4_handler::ReduceTree(int Nentries, string outFilename){
+  TFile outFile(outFilename.c_str(), "recreate");
+  outFile.cd();
+
+  // Setting up desired triggers
+  vector <string> triggername;
+  TString trigname, trigEffName;
+  string TriggerName[] = {"Mu17", "Mu40", "Mu40_eta2p1", "Mu40_PFHT350", "Mu40_PFNoPUHT350", "Mu40_PFHT350",  	// 0-6
+			  "PFHT350_Mu15_PFMET45", "PFHT350_Mu15_PFMET45", "PFNoPUHT350_Mu15_PFMET45", 		// 7-9
+			  "PFHT400_Mu5_PFMET45", "PFNoPUHT400_Mu5_PFMET45", 					// 10-11
+			  "Ele80_CaloIdVT_TrkIdT",    "CleanPFHT300_Ele40_CaloIdVT_TrkIdT",  			// 12-13
+			  "CleanPFNoPUHT300_Ele40_CaloIdVT_TrkIdT", 						// 14
+			  "Ele27_WP80", "CleanPFHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET4", 		// 15
+			  "CleanPFNoPUHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45", 			// 16
+			  "CleanPFHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45",  			// 17
+			  "CleanPFNoPUHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"}; 			// 18
+ 
+  int TriggerIndex[NTrigReduced], AllTriggers(0);
+  vector<int> trigger;
+  GetEntry(0);
+  for(int ieff(0); ieff < NTrigReduced; ieff++){
+    TriggerIndex[ieff] = -1; 
+    triggername.push_back(TriggerName[ieff]);
+    trigger.push_back(-1);
+    for(unsigned int tri(0); tri < trigger_decision->size(); tri++){
+      trigname = trigger_name->at(tri);
+      trigEffName = "HLT_"; trigEffName += triggername[ieff]; trigEffName += "_v";
+      if(trigname.Contains(trigEffName)) {
+	TriggerIndex[ieff] = tri;
+	break;
+      }
+    } // Loop over all trigger in event
+    AllTriggers += TriggerIndex[ieff];
+  } // Loop over desired triggers
+  if(AllTriggers == -NTrigReduced) {
+    cout<<"No desired triggers exist in this ntuple"<<endl;
+    return;
+  }
+
+  // Setting up online MET
+
+  // Reduced tree
+  TTree tree("ra4", "ra4");
+  float ht, met, onmet, metsig;
+  tree.Branch("met", &met);
+  tree.Branch("metsig", &metsig);
+  tree.Branch("ht", &ht);
+  tree.Branch("onmet", &onmet);
+
+  int njets, nel, nmu, nvel, nvmu;
+  tree.Branch("nmu", &nmu);
+  tree.Branch("nvmu", &nvmu);
+  tree.Branch("nel", &nel);
+  tree.Branch("nvel", &nvel);
+  tree.Branch("njets", &njets);
+  tree.Branch("trigger", &trigger);
+
+  Timer timer(Nentries);
+  timer.Start();
+  for(int entry(0); entry < Nentries; entry++){
+    if(entry%5000==0 && entry!=0){
+      timer.PrintRemainingTime();
+    }
+    timer.Iterate();
+    GetEntry(entry);
+
+    // Calculating branches
+    met = pfTypeImets_et->at(0);
+    metsig = pfmets_fullSignif;
+  int index_onmet(-1);
+  for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
+    trigname = standalone_triggerobject_collectionname->at(tri); 
+    //cout<<tri<<": "<<trigname<<endl;
+    if(trigname.BeginsWith("hltPFMETnoMu")) continue;
+    if(trigname.Contains("MuORNoMu")) continue;
+    if(trigname.BeginsWith("hltPFMET")) {
+      index_onmet = tri;
+      break;
+    }
+  }
+    if(index_onmet >= 0) onmet = standalone_triggerobject_et->at(index_onmet);
+    else onmet = -999;
+    vector<int> signal_electrons = GetElectrons();
+    vector<int> veto_electrons = GetElectrons(false);
+    vector<int> signal_muons = GetMuons();
+    vector<int> veto_muons = GetMuons(false);
+    vector<int> good_jets = GetJets(signal_electrons, signal_muons, ht);
+    nel  = signal_electrons.size();
+    nvel = veto_electrons.size();
+    nmu  = signal_muons.size();
+    nvmu = veto_muons.size();
+    njets = good_jets.size();
+    AllTriggers = 0;
+    for(int ieff(0); ieff < NTrigReduced; ieff++){
+      if(TriggerIndex[ieff] >= 0){
+	trigger[ieff] = static_cast<int> (trigger_decision->at(TriggerIndex[ieff]));
+	AllTriggers += trigger[ieff];
+      } else trigger[ieff] = -1;
+    }
+    if(AllTriggers == 0) continue; // No desired triggers passed
+
+    tree.Fill();
+  }
+
+  tree.Write();
+
+  // Global tree
+  int ntriggers(NTrigReduced);
+  TTree treeglobal("ra4global", "ra4global");
+  treeglobal.Branch("ntriggers", &ntriggers);
+  treeglobal.Branch("noriginal", &Nentries);
+  treeglobal.Branch("triggername", &triggername);
+
+  treeglobal.Fill();
+  treeglobal.Write();
+
+  outFile.Close();
+  cout<<"Reduced tree in "<<outFilename<<endl;
+}
+
 
 void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
 
@@ -495,8 +618,8 @@ bool ra4_handler::IsMC(){
 ra4_handler::ra4_handler(const std::string &fileName, const bool isList, const bool fastMode):
   cfA(fileName, isList){
   if (fastMode) { // turn off unnecessary branches
-    chainA.SetBranchStatus("triggerobject_*",0);
-    chainA.SetBranchStatus("standalone_t*",0);
+    //chainA.SetBranchStatus("triggerobject_*",0);
+    //chainA.SetBranchStatus("standalone_t*",0);
     chainA.SetBranchStatus("L1trigger_*",0);
     chainA.SetBranchStatus("passprescale*",0);
     chainA.SetBranchStatus("softjetUp_*",0);
@@ -509,7 +632,7 @@ ra4_handler::ra4_handler(const std::string &fileName, const bool isList, const b
     chainB.SetBranchStatus("taus*",0);
     chainB.SetBranchStatus("tracks*",0);
     chainB.SetBranchStatus("mets*",0);
-    chainB.SetBranchStatus("pfmets*",0);
+    //chainB.SetBranchStatus("pfmets*",0);
     chainB.SetBranchStatus("mets_AK5_et",0);
     chainB.SetBranchStatus("Nmc*",0);
     chainB.SetBranchStatus("mc_*",0);

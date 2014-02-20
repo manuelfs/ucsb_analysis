@@ -22,6 +22,7 @@ public:
   explicit ra4_handler(const std::string &fileName, const bool isList, const bool fastMode);
 
   // General
+  void ReduceTree(int Nentries, string outFilename);
   void CalTrigEfficiency(int Nentries, string outFilename);
   double getDZ(double vx, double vy, double vz, double px, double py, double pz, int firstGoodVertex);
   bool IsMC();
