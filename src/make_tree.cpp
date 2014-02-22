@@ -65,7 +65,7 @@ int main(int argc, char *argv[]){
 
   time(&curTime);
   cout<<"Getting started takes "<<difftime(curTime,startTime)<<" seconds. "
-      <<"Making reduced tree with "<<Nentries<<" entries."<<endl;
+      <<"Making reduced tree with "<<Nentries<<" entries out of "<<tHandler.GetTotalEntries()<<endl;
   tHandler.ReduceTree(Nentries, outFilename);
 
   time(&curTime);

@@ -64,15 +64,14 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     return;
   }
 
-  // Setting up online MET
-
   // Reduced tree
   TTree tree("ra4", "ra4");
-  float ht, met, onmet, metsig;
+  float ht, met, onmet, metsig, ntrupv;
   tree.Branch("met", &met);
   tree.Branch("metsig", &metsig);
   tree.Branch("ht", &ht);
   tree.Branch("onmet", &onmet);
+  tree.Branch("ntrupv", &ntrupv);
 
   int njets, nel, nmu, nvel, nvmu;
   tree.Branch("nmu", &nmu);
@@ -92,21 +91,6 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     GetEntry(entry);
 
     // Calculating branches
-    met = pfTypeImets_et->at(0);
-    metsig = pfmets_fullSignif;
-  int index_onmet(-1);
-  for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
-    trigname = standalone_triggerobject_collectionname->at(tri); 
-    //cout<<tri<<": "<<trigname<<endl;
-    if(trigname.BeginsWith("hltPFMETnoMu")) continue;
-    if(trigname.Contains("MuORNoMu")) continue;
-    if(trigname.BeginsWith("hltPFMET")) {
-      index_onmet = tri;
-      break;
-    }
-  }
-    if(index_onmet >= 0) onmet = standalone_triggerobject_et->at(index_onmet);
-    else onmet = -999;
     vector<int> signal_electrons = GetElectrons();
     vector<int> veto_electrons = GetElectrons(false);
     vector<int> signal_muons = GetMuons();
@@ -125,6 +109,30 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
       } else trigger[ieff] = -1;
     }
     if(AllTriggers == 0) continue; // No desired triggers passed
+
+    met = pfTypeImets_et->at(0);
+    metsig = pfmets_fullSignif;
+    // Setting up online MET
+    int index_onmet(-1);
+    for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
+      trigname = standalone_triggerobject_collectionname->at(tri); 
+      //cout<<tri<<": "<<trigname<<endl;
+      if(trigname.BeginsWith("hltPFMETnoMu")) continue;
+      if(trigname.Contains("MuORNoMu")) continue;
+      if(trigname.BeginsWith("hltPFMET")) {
+	index_onmet = tri;
+	break;
+      }
+    }
+    if(index_onmet >= 0) onmet = standalone_triggerobject_et->at(index_onmet);
+    else onmet = -999;
+    
+    for(unsigned int bc(0); bc<PU_bunchCrossing->size(); ++bc){
+      if(PU_bunchCrossing->at(bc)==0){
+	ntrupv = PU_TrueNumInteractions->at(bc);
+	break;
+      }
+    }
 
     tree.Fill();
   }
@@ -233,10 +241,10 @@ void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
     vector<int> veto_muons = GetMuons(false);
     vector<int> good_jets = GetJets(signal_electrons, signal_muons, HtMet[0]);
 
-//     cout<<entry<<": HT "<<HtMet[0]<<", MET "<<HtMet[1]<<", "<<good_jets.size()<<" jets, "
-//  	<<signal_muons.size()<<" signal muons, "
-//  	<<veto_muons.size()<<" veto muons, "<<signal_electrons.size()<<" signal elecs, "
-//  	<<veto_electrons.size()<<" veto elecs. "<<endl<<"======"<<endl;
+    //     cout<<entry<<": HT "<<HtMet[0]<<", MET "<<HtMet[1]<<", "<<good_jets.size()<<" jets, "
+    //  	<<signal_muons.size()<<" signal muons, "
+    //  	<<veto_muons.size()<<" veto muons, "<<signal_electrons.size()<<" signal elecs, "
+    //  	<<veto_electrons.size()<<" veto elecs. "<<endl<<"======"<<endl;
 
     if(good_jets.size() < 3) continue;
     if (!((signal_muons.size() == 0 && veto_muons.size() == 0 && signal_electrons.size() == 1 && veto_electrons.size() == 1) || 

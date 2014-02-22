@@ -70,7 +70,7 @@ int main(int argc, char *argv[]){
 
   time(&curTime);
   cout<<"Getting started takes "<<difftime(curTime,startTime)<<" seconds. "
-      <<"Calculating trigger efficiency with "<<Nentries<<" entries."<<endl;
+      <<"Calculating trigger efficiency with "<<Nentries<<" entries out of "<<tHandler.GetTotalEntries()<<endl;
   if(printTriggers) tHandler.PrintAllTriggers(outFilename);
   else tHandler.CalTrigEfficiency(Nentries, outFilename);
 
