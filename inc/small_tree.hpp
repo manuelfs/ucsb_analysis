@@ -5,14 +5,18 @@
 #define H_SMALL_TREE
 
 #include <vector>
+#include "TChain.h"
 #include "TTree.h"
 
 using namespace std;
 
 class small_tree{
 public:
-  small_tree();
+  small_tree(); // Constructor to create tree
+  small_tree(TString filename); // Constructor to read tree
 
+  bool isReadOnly;
+  TChain chain;
   TTree tree;
   float ht;
   float met;
@@ -26,11 +30,9 @@ public:
   int njets;
   vector<int> trigger;
 
-  inline void Fill(){tree.Fill();}
-
-  inline void Write(){tree.Write();}
-
-  inline void GetEntries(){tree.GetEntries();}
+  void Fill();
+  void Write();
+  int GetEntries();
 };
 
 #endif
