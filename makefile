@@ -18,13 +18,15 @@ vpath %.exe $(EXEDIR)
 vpath %.d $(MAKEDIR)
 
 # Add new executables to this list
-all: calc_trig_efficiency.exe make_tree.exe
+all: calc_trig_efficiency.exe make_tree.exe generate_small_tree.exe
 
 # List any object files your executable need to be linked with
-$(EXEDIR)/calc_trig_efficiency.exe: calc_trig_efficiency.o ra4_handler.o cfa.o in_json_2012.o ucsb_utils.o timer.o styles.o
-$(EXEDIR)/make_tree.exe: make_tree.o ra4_handler.o cfa.o in_json_2012.o ucsb_utils.o timer.o styles.o
+$(EXEDIR)/calc_trig_efficiency.exe: calc_trig_efficiency.o ra4_handler.o cfa.o in_json_2012.o ucsb_utils.o timer.o styles.o small_tree.o
+$(EXEDIR)/make_tree.exe: make_tree.o ra4_handler.o cfa.o in_json_2012.o ucsb_utils.o timer.o styles.o small_tree.o
+$(EXEDIR)/generate_small_tree.exe: generate_small_tree.o
 
 -include $(addsuffix .d,$(addprefix $(MAKEDIR)/,$(notdir $(basename $(wildcard $(SRCDIR)/*.cpp)))))
+-include $(MAKEDIR)/small_tree.d
 
 $(MAKEDIR)/%.d: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -MM -MG -MF $@ $< 
@@ -38,10 +40,17 @@ $(EXEDIR)/%.exe: $(OBJDIR)/%.o
 	$(LD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 
+# small_tree.cpp and small_tree.hpp need special treatment. Probably cleaner ways to do this.
+$(SRCDIR)/small_tree.cpp $(INCDIR)/small_tree.hpp: dummy_small_tree.all
+.SECONDARY: dummy_small_tree.all
+dummy_small_tree.all: $(EXEDIR)/generate_small_tree.exe 
+	./$< $(word 2,$^)
+.PRECIOUS: generate_small_tree.o
+
 .DELETE_ON_ERROR:
 
 .PHONY: clean
 
 clean:
-	-rm -rf $(EXEDIR)/*.exe $(OBJDIR)/*.o $(MAKEDIR)/*.d *.exe *.o *.d
+	-rm -rf $(EXEDIR)/*.exe $(OBJDIR)/*.o $(MAKEDIR)/*.d $(SRCDIR)/small_tree.cpp $(INCDIR)/small_tree.hpp *.exe *.o *.d
 	./run/remove_backups.sh

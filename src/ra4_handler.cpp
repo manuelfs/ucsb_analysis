@@ -1,3 +1,4 @@
+#include "small_tree.hpp"
 #include "styles.hpp"
 #include "in_json_2012.hpp"
 #include "ra4_handler.hpp"
@@ -29,6 +30,9 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
   TFile outFile(outFilename.c_str(), "recreate");
   outFile.cd();
 
+  // Reduced tree
+  small_tree tree;
+
   // Setting up desired triggers
   vector <string> triggername;
   TString trigname, trigEffName;
@@ -43,12 +47,11 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 			  "CleanPFNoPUHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"}; 			// 18
  
   int TriggerIndex[NTrigReduced], AllTriggers(0);
-  vector<int> trigger;
   GetEntry(0);
   for(int ieff(0); ieff < NTrigReduced; ieff++){
     TriggerIndex[ieff] = -1; 
     triggername.push_back(TriggerName[ieff]);
-    trigger.push_back(-1);
+    tree.trigger.push_back(-1);
     for(unsigned int tri(0); tri < trigger_decision->size(); tri++){
       trigname = trigger_name->at(tri);
       trigEffName = "HLT_"; trigEffName += triggername[ieff]; trigEffName += "_v";
@@ -64,23 +67,6 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     return;
   }
 
-  // Reduced tree
-  TTree tree("ra4", "ra4");
-  float ht, met, onmet, metsig, ntrupv;
-  tree.Branch("met", &met);
-  tree.Branch("metsig", &metsig);
-  tree.Branch("ht", &ht);
-  tree.Branch("onmet", &onmet);
-  tree.Branch("ntrupv", &ntrupv);
-
-  int njets, nel, nmu, nvel, nvmu;
-  tree.Branch("nmu", &nmu);
-  tree.Branch("nvmu", &nvmu);
-  tree.Branch("nel", &nel);
-  tree.Branch("nvel", &nvel);
-  tree.Branch("njets", &njets);
-  tree.Branch("trigger", &trigger);
-
   Timer timer(Nentries);
   timer.Start();
   for(int entry(0); entry < Nentries; entry++){
@@ -95,23 +81,23 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     vector<int> veto_electrons = GetElectrons(false);
     vector<int> signal_muons = GetMuons();
     vector<int> veto_muons = GetMuons(false);
-    vector<int> good_jets = GetJets(signal_electrons, signal_muons, ht);
-    nel  = signal_electrons.size();
-    nvel = veto_electrons.size();
-    nmu  = signal_muons.size();
-    nvmu = veto_muons.size();
-    njets = good_jets.size();
+    vector<int> good_jets = GetJets(signal_electrons, signal_muons, tree.ht);
+    tree.nel  = signal_electrons.size();
+    tree.nvel = veto_electrons.size();
+    tree.nmu  = signal_muons.size();
+    tree.nvmu = veto_muons.size();
+    tree.njets = good_jets.size();
     AllTriggers = 0;
     for(int ieff(0); ieff < NTrigReduced; ieff++){
       if(TriggerIndex[ieff] >= 0){
-	trigger[ieff] = static_cast<int> (trigger_decision->at(TriggerIndex[ieff]));
-	AllTriggers += trigger[ieff];
-      } else trigger[ieff] = -1;
+	tree.trigger[ieff] = static_cast<int> (trigger_decision->at(TriggerIndex[ieff]));
+	AllTriggers += tree.trigger[ieff];
+      } else tree.trigger[ieff] = -1;
     }
     if(AllTriggers == 0) continue; // No desired triggers passed
 
-    met = pfTypeImets_et->at(0);
-    metsig = pfmets_fullSignif;
+    tree.met = pfTypeImets_et->at(0);
+    tree.metsig = pfmets_fullSignif;
     // Setting up online MET
     int index_onmet(-1);
     for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
@@ -124,16 +110,15 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 	break;
       }
     }
-    if(index_onmet >= 0) onmet = standalone_triggerobject_et->at(index_onmet);
-    else onmet = -999;
+    if(index_onmet >= 0) tree.onmet = standalone_triggerobject_et->at(index_onmet);
+    else tree.onmet = -999;
     
     for(unsigned int bc(0); bc<PU_bunchCrossing->size(); ++bc){
       if(PU_bunchCrossing->at(bc)==0){
-	ntrupv = PU_TrueNumInteractions->at(bc);
+	tree.ntrupv = PU_TrueNumInteractions->at(bc);
 	break;
       }
     }
-
     tree.Fill();
   }
 

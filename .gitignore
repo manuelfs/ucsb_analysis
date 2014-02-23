@@ -24,6 +24,7 @@ bin/*
 # emacs backups
 *~
 *#
+.#*
 
 # Other
 *.root
