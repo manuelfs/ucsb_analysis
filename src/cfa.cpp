@@ -51,9 +51,9 @@ cfA::cfA(const std::string& fileIn, const bool isList):
   pf_els_PFphotonIsoR03(0),
   pf_els_PFneutralHadronIsoR03(0),
   pf_els_hasMatchedConversion(0),
-  trk_nTOBTEC(0),
-  trk_ratioAllTOBTEC(0),
-  trk_ratioJetTOBTEC(0),
+//   trk_nTOBTEC(0),
+//   trk_ratioAllTOBTEC(0),
+//   trk_ratioJetTOBTEC(0),
   hbhefilter_decision(0),
   trackingfailurefilter_decision(0),
   cschalofilter_decision(0),
@@ -106,9 +106,9 @@ cfA::cfA(const std::string& fileIn, const bool isList):
   pdfweights_cteq(0),
   pdfweights_mstw(0),
   pdfweights_nnpdf(0),
-  photon_chIsoValues(0),
-  photon_phIsoValues(0),
-  photon_nhIsoValues(0),
+//   photon_chIsoValues(0),
+//   photon_phIsoValues(0),
+//   photon_nhIsoValues(0),
   photon_passElectronVeto(0),
   puJet_rejectionBeta(0),
   puJet_rejectionMVA(0),
@@ -165,9 +165,9 @@ cfA::cfA(const std::string& fileIn, const bool isList):
   b_pf_els_PFphotonIsoR03(),
   b_pf_els_PFneutralHadronIsoR03(),
   b_pf_els_hasMatchedConversion(),
-  b_trk_nTOBTEC(),
-  b_trk_ratioAllTOBTEC(),
-  b_trk_ratioJetTOBTEC(),
+//   b_trk_nTOBTEC(),
+//   b_trk_ratioAllTOBTEC(),
+//   b_trk_ratioJetTOBTEC(),
   b_hbhefilter_decision(),
   b_trackingfailurefilter_decision(),
   b_cschalofilter_decision(),
@@ -220,9 +220,9 @@ cfA::cfA(const std::string& fileIn, const bool isList):
   b_pdfweights_cteq(),
   b_pdfweights_mstw(),
   b_pdfweights_nnpdf(),
-  b_photon_chIsoValues(),
-  b_photon_phIsoValues(),
-  b_photon_nhIsoValues(),
+//   b_photon_chIsoValues(),
+//   b_photon_phIsoValues(),
+//   b_photon_nhIsoValues(),
   b_photon_passElectronVeto(),
   b_puJet_rejectionBeta(),
   b_puJet_rejectionMVA(),
@@ -3003,9 +3003,9 @@ void cfA::InitializeA(){
   pf_els_PFphotonIsoR03=0;
   pf_els_PFneutralHadronIsoR03=0;
   pf_els_hasMatchedConversion=0;
-  trk_nTOBTEC=0;
-  trk_ratioAllTOBTEC=0;
-  trk_ratioJetTOBTEC=0;
+//   trk_nTOBTEC=0;
+//   trk_ratioAllTOBTEC=0;
+//   trk_ratioJetTOBTEC=0;
   hbhefilter_decision=0;
   trackingfailurefilter_decision=0;
   cschalofilter_decision=0;
@@ -3058,9 +3058,9 @@ void cfA::InitializeA(){
   pdfweights_cteq=0;
   pdfweights_mstw=0;
   pdfweights_nnpdf=0;
-  photon_chIsoValues=0;
-  photon_phIsoValues=0;
-  photon_nhIsoValues=0;
+//   photon_chIsoValues=0;
+//   photon_phIsoValues=0;
+//   photon_nhIsoValues=0;
   photon_passElectronVeto=0;
   puJet_rejectionBeta=0;
   puJet_rejectionMVA=0;
@@ -3117,9 +3117,9 @@ void cfA::InitializeA(){
   chainA.SetBranchAddress("pf_els_PFphotonIsoR03", &pf_els_PFphotonIsoR03, &b_pf_els_PFphotonIsoR03);
   chainA.SetBranchAddress("pf_els_PFneutralHadronIsoR03", &pf_els_PFneutralHadronIsoR03, &b_pf_els_PFneutralHadronIsoR03);
   chainA.SetBranchAddress("pf_els_hasMatchedConversion", &pf_els_hasMatchedConversion, &b_pf_els_hasMatchedConversion);
-  chainA.SetBranchAddress("trk_nTOBTEC", &trk_nTOBTEC, &b_trk_nTOBTEC);
-  chainA.SetBranchAddress("trk_ratioAllTOBTEC", &trk_ratioAllTOBTEC, &b_trk_ratioAllTOBTEC);
-  chainA.SetBranchAddress("trk_ratioJetTOBTEC", &trk_ratioJetTOBTEC, &b_trk_ratioJetTOBTEC);
+//   chainA.SetBranchAddress("trk_nTOBTEC", &trk_nTOBTEC, &b_trk_nTOBTEC);
+//   chainA.SetBranchAddress("trk_ratioAllTOBTEC", &trk_ratioAllTOBTEC, &b_trk_ratioAllTOBTEC);
+//   chainA.SetBranchAddress("trk_ratioJetTOBTEC", &trk_ratioJetTOBTEC, &b_trk_ratioJetTOBTEC);
   chainA.SetBranchAddress("hbhefilter_decision", &hbhefilter_decision, &b_hbhefilter_decision);
   chainA.SetBranchAddress("trackingfailurefilter_decision", &trackingfailurefilter_decision, &b_trackingfailurefilter_decision);
   chainA.SetBranchAddress("cschalofilter_decision", &cschalofilter_decision, &b_cschalofilter_decision);
@@ -3172,9 +3172,9 @@ void cfA::InitializeA(){
 //   chainA.SetBranchAddress("pdfweights_cteq", &pdfweights_cteq, &b_pdfweights_cteq);
 //   chainA.SetBranchAddress("pdfweights_mstw", &pdfweights_mstw, &b_pdfweights_mstw);
 //   chainA.SetBranchAddress("pdfweights_nnpdf", &pdfweights_nnpdf, &b_pdfweights_nnpdf);
-  chainA.SetBranchAddress("photon_chIsoValues", &photon_chIsoValues, &b_photon_chIsoValues);
-  chainA.SetBranchAddress("photon_phIsoValues", &photon_phIsoValues, &b_photon_phIsoValues);
-  chainA.SetBranchAddress("photon_nhIsoValues", &photon_nhIsoValues, &b_photon_nhIsoValues);
+//   chainA.SetBranchAddress("photon_chIsoValues", &photon_chIsoValues, &b_photon_chIsoValues);
+//   chainA.SetBranchAddress("photon_phIsoValues", &photon_phIsoValues, &b_photon_phIsoValues);
+//   chainA.SetBranchAddress("photon_nhIsoValues", &photon_nhIsoValues, &b_photon_nhIsoValues);
 //   chainA.SetBranchAddress("photon_passElectronVeto", &photon_passElectronVeto, &b_photon_passElectronVeto);
 //   chainA.SetBranchAddress("puJet_rejectionBeta", &puJet_rejectionBeta, &b_puJet_rejectionBeta);
 //   chainA.SetBranchAddress("puJet_rejectionMVA", &puJet_rejectionMVA, &b_puJet_rejectionMVA);

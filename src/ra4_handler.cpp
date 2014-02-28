@@ -126,7 +126,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 
   // Global tree
   int ntriggers(NTrigReduced);
-  TTree treeglobal("ra4global", "ra4global");
+  TTree treeglobal("treeglobal", "treeglobal");
   treeglobal.Branch("ntriggers", &ntriggers);
   treeglobal.Branch("noriginal", &Nentries);
   treeglobal.Branch("triggername", &triggername);
