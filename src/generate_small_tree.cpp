@@ -10,6 +10,8 @@ int main(){
   TString name;
   // Add all small_tree variables here
   vector<TString> variables;
+  variables.push_back("float weight");
+  variables.push_back("float wpu");
   variables.push_back("float ht");
   variables.push_back("float met");
   variables.push_back("float metsig");

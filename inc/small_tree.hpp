@@ -18,6 +18,8 @@ public:
   bool isReadOnly;
   TChain chain;
   TTree tree;
+  float weight;
+  float wpu;
   float ht;
   float met;
   float metsig;

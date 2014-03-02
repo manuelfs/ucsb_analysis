@@ -35,7 +35,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 
   // Setting up desired triggers
   vector <string> triggername;
-  TString trigname, trigEffName;
+  TString trigname, trigEffName, word, model;
   string TriggerName[] = {"Mu17", "Mu40", "Mu40_eta2p1", "Mu40_PFHT350", "Mu40_PFNoPUHT350", "Mu40_PFHT350",  	// 0-6
 			  "PFHT350_Mu15_PFMET45", "PFHT350_Mu15_PFMET45", "PFNoPUHT350_Mu15_PFMET45", 		// 7-9
 			  "PFHT400_Mu5_PFMET45", "PFNoPUHT400_Mu5_PFMET45", 					// 10-11
@@ -48,6 +48,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
  
   int TriggerIndex[NTrigReduced], AllTriggers(0);
   GetEntry(0);
+  model = model_params->c_str();
   for(int ieff(0); ieff < NTrigReduced; ieff++){
     TriggerIndex[ieff] = -1; 
     triggername.push_back(TriggerName[ieff]);
@@ -67,6 +68,18 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     return;
   }
 
+  vector<float> wpu_min, wpu_max, wpu;
+  ifstream wpu_file("txt/weights_sms_pu.txt");
+  if(sampleName.find("8TeV_T1tttt")!=std::string::npos){
+    for(int iword(0); iword<3; iword++) wpu_file>>word;
+    while(wpu_file>>word){
+      wpu_min.push_back(word.Atof());
+      wpu_file>>word;
+      wpu_max.push_back(word.Atof());
+      wpu_file>>word;
+      wpu.push_back(word.Atof());
+    }
+  }
   Timer timer(Nentries);
   timer.Start();
   for(int entry(0); entry < Nentries; entry++){
@@ -96,6 +109,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     }
     if(AllTriggers == 0) continue; // No desired triggers passed
 
+    ////////////////   METS   ////////////////
     tree.met = pfTypeImets_et->at(0);
     tree.metsig = pfmets_fullSignif;
     // Setting up online MET
@@ -112,13 +126,27 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     }
     if(index_onmet >= 0) tree.onmet = standalone_triggerobject_et->at(index_onmet);
     else tree.onmet = -999;
-    
+
+
+    ////////////////   Pile-up   ////////////////
     for(unsigned int bc(0); bc<PU_bunchCrossing->size(); ++bc){
       if(PU_bunchCrossing->at(bc)==0){
 	tree.ntrupv = PU_TrueNumInteractions->at(bc);
 	break;
       }
     }
+    ////////////////   Weights   ////////////////
+    if(sampleName.find("8TeV_T1tttt")!=std::string::npos){
+      tree.wpu = -99;
+      for(unsigned int bin(0); bin<wpu.size(); bin++)
+	if(tree.ntrupv >= wpu_min[bin] && tree.ntrupv < wpu_max[bin]){
+	  tree.wpu = wpu[bin];
+	  break;
+	}
+    } else tree.wpu = 1;
+    tree.weight = tree.wpu;
+
+    
     tree.Fill();
   }
 
@@ -130,6 +158,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
   treeglobal.Branch("ntriggers", &ntriggers);
   treeglobal.Branch("noriginal", &Nentries);
   treeglobal.Branch("triggername", &triggername);
+  treeglobal.Branch("model", &model);
 
   treeglobal.Fill();
   treeglobal.Write();

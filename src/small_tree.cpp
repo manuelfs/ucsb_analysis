@@ -10,6 +10,8 @@ using std::endl;
 
 small_tree::small_tree():
   tree("tree", "tree"){
+  tree.Branch("weight", &weight);
+  tree.Branch("wpu", &wpu);
   tree.Branch("ht", &ht);
   tree.Branch("met", &met);
   tree.Branch("metsig", &metsig);
@@ -27,6 +29,8 @@ small_tree::small_tree():
 small_tree::small_tree(TString filename):
   chain("tree"){
   chain.Add(filename);
+  chain.SetBranchAddress("weight", &weight);
+  chain.SetBranchAddress("wpu", &wpu);
   chain.SetBranchAddress("ht", &ht);
   chain.SetBranchAddress("met", &met);
   chain.SetBranchAddress("metsig", &metsig);

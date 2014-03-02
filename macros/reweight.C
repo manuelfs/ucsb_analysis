@@ -31,13 +31,14 @@ void reweight(bool doPlot=false){
   TH1F hDen(sDen, sDen, nBins, binning); TH1F hNum(sNum, sNum, nBins, binning);
   cDen.Project(sDen,"ntrupv");
   cNum.Project(sNum,"ntrupv");
+  float entriesDen = hDen.Integral(), entriesNum = hNum.Integral();
 
   TString textname = "txt/weights_sms_pu.txt";
   ofstream fileweights(textname);
   fileweights<<"min\tmax\t  weight"<<endl;
   for(int bin(0); bin < nBins; bin++){
     fileweights<<binning[bin]<<"\t"<<binning[bin+1]<<"\t  ";
-    fileweights<<RoundNumber(hDen.GetBinContent(bin+1),4,hNum.GetBinContent(bin+1))<<endl;
+    fileweights<<RoundNumber(hDen.GetBinContent(bin+1)*entriesNum,4,hNum.GetBinContent(bin+1)*entriesDen)<<endl;
   }
   fileweights.close();
   cout<<"PU weights saved in "<<textname<<endl;
