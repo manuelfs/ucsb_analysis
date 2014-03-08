@@ -55,6 +55,10 @@ public:
   float GetEffectiveArea(float SCEta, bool isMC);
   vector<int> GetElectrons(bool doSignal = true);
   vector<int> GetMuons(bool doSignal = true);
+  float GetElectronIsolation(uint iel);
+  float GetMuonIsolation(uint imu);
+  bool passedBaseElectronSelection(uint iel);
+  bool passedBaseMuonSelection(uint iel);
 
 };
 

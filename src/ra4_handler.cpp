@@ -29,6 +29,8 @@ const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
 void ra4_handler::ReduceTree(int Nentries, string outFilename){
   TFile outFile(outFilename.c_str(), "recreate");
   outFile.cd();
+  TString energy, SampleName;
+  SampleName = ParseSampleName(outFilename, energy);
 
   // Reduced tree
   small_tree tree;
@@ -68,6 +70,12 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     return;
   }
 
+  const float luminosity = 19600, xsec_t1tttt_8tev(0.00695169), xsec_t1tttt_13tev(0.121755);
+  const float xsec_tt_8tev(245.8), xsec_tt_13tev(818.8);
+  Float_t pt_thresh[] = {30, 40, 50, 60, 70, 80};
+  int nthresh = 6;
+  tree.njets.resize(nthresh);
+
   vector<float> wpu_min, wpu_max, wpu;
   ifstream wpu_file("txt/weights_sms_pu.txt");
   if(sampleName.find("8TeV_T1tttt")!=std::string::npos){
@@ -89,17 +97,15 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     timer.Iterate();
     GetEntry(entry);
 
-    // Calculating branches
+    /////////  Calculating branches  /////////
     vector<int> signal_electrons = GetElectrons();
     vector<int> veto_electrons = GetElectrons(false);
     vector<int> signal_muons = GetMuons();
     vector<int> veto_muons = GetMuons(false);
-    vector<int> good_jets = GetJets(signal_electrons, signal_muons, tree.ht);
     tree.nel  = signal_electrons.size();
     tree.nvel = veto_electrons.size();
     tree.nmu  = signal_muons.size();
     tree.nvmu = veto_muons.size();
-    tree.njets = good_jets.size();
     AllTriggers = 0;
     for(int ieff(0); ieff < NTrigReduced; ieff++){
       if(TriggerIndex[ieff] >= 0){
@@ -108,6 +114,21 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
       } else tree.trigger[ieff] = -1;
     }
     if(AllTriggers == 0) continue; // No desired triggers passed
+
+    ////////////////   Jets   ////////////////
+    tree.jets_pt.resize(0);
+    tree.jets_eta.resize(0);
+    tree.jets_phi.resize(0);
+    for(int ith(0); ith < nthresh; ith++) 
+      tree.njets[ith] = 0;
+    for(uint ijet = 0; ijet<jets_AK5PFclean_pt->size(); ijet++) {
+      if(!isGoodJet(ijet, 30)) continue;
+      tree.jets_pt.push_back(jets_AK5PFclean_pt->at(ijet));
+      tree.jets_eta.push_back(jets_AK5PFclean_eta->at(ijet));
+      tree.jets_phi.push_back(jets_AK5PFclean_phi->at(ijet));
+      for(int ith(0); ith < nthresh; ith++) 
+	if(jets_AK5PFclean_pt->at(ijet) >= pt_thresh[ith]) tree.njets[ith]++;
+    }
 
     ////////////////   METS   ////////////////
     tree.met = pfTypeImets_et->at(0);
@@ -136,15 +157,22 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
       }
     }
     ////////////////   Weights   ////////////////
-    if(sampleName.find("8TeV_T1tttt")!=std::string::npos){
+    tree.wpu = 1;
+    tree.wlumi = 1;
+    if(energy == "8" && SampleName == "T1ttt"){
       tree.wpu = -99;
       for(unsigned int bin(0); bin<wpu.size(); bin++)
 	if(tree.ntrupv >= wpu_min[bin] && tree.ntrupv < wpu_max[bin]){
 	  tree.wpu = wpu[bin];
 	  break;
 	}
-    } else tree.wpu = 1;
-    tree.weight = tree.wpu;
+      tree.wlumi = xsec_t1tttt_8tev*luminosity / static_cast<double>(Nentries);
+    } 
+    if(energy == "14" && SampleName == "T1ttt") tree.wlumi = xsec_t1tttt_13tev*luminosity / static_cast<double>(Nentries);
+    if(energy == "8" && SampleName == "t#bar{t}") tree.wlumi = xsec_tt_8tev*luminosity / static_cast<double>(Nentries);
+    if(energy == "13" && SampleName == "t#bar{t}") tree.wlumi = xsec_tt_13tev*luminosity / static_cast<double>(Nentries);
+
+    tree.weight = tree.wpu*tree.wlumi;
 
     
     tree.Fill();
@@ -159,6 +187,8 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
   treeglobal.Branch("noriginal", &Nentries);
   treeglobal.Branch("triggername", &triggername);
   treeglobal.Branch("model", &model);
+  treeglobal.Branch("nthresh", &nthresh);
+  treeglobal.Branch("pt_thresh", pt_thresh, "pt_thresh[nthresh]/F");
 
   treeglobal.Fill();
   treeglobal.Write();
@@ -379,14 +409,18 @@ vector<int> ra4_handler::GetJets(vector<int> electrons, vector<int> muons, float
   return jets;
 }
 
-bool ra4_handler::passedMuonSelection(uint imu){
-  if(imu >= mus_pt->size()) return false;
-
-  float d0PV = mus_tk_d0dum->at(imu)-pv_x->at(0)*sin(mus_tk_phi->at(imu))+pv_y->at(0)*cos(mus_tk_phi->at(imu));
+float ra4_handler::GetMuonIsolation(uint imu){
+  if(imu >= mus_pt->size()) return -999;
   double sumEt = mus_pfIsolationR03_sumNeutralHadronEt->at(imu) + mus_pfIsolationR03_sumPhotonEt->at(imu) 
     - 0.5*mus_pfIsolationR03_sumPUPt->at(imu);
   if(sumEt<0.0) sumEt=0.0;
-  float relIso = (mus_pfIsolationR03_sumChargedHadronPt->at(imu) + sumEt)/mus_pt->at(imu);
+  return (mus_pfIsolationR03_sumChargedHadronPt->at(imu) + sumEt)/mus_pt->at(imu);
+}
+
+bool ra4_handler::passedBaseMuonSelection(uint imu){
+  if(imu >= mus_pt->size()) return false;
+
+  float d0PV = mus_tk_d0dum->at(imu)-pv_x->at(0)*sin(mus_tk_phi->at(imu))+pv_y->at(0)*cos(mus_tk_phi->at(imu));
   int pfIdx=-1;
   
   //   cout<<"Muon "<<imu<<" => global "<<mus_isGlobalMuon->at(imu)<<", isPFMuon "<< mus_isPFMuon->at(imu)
@@ -394,7 +428,7 @@ bool ra4_handler::passedMuonSelection(uint imu){
   //        <<", LayersWithMeasurement "<< mus_tk_LayersWithMeasurement->at(imu)<<", numvalPixelhits "<< mus_tk_numvalPixelhits->at(imu)
   //        <<", numberOfMatchedStations "<<mus_numberOfMatchedStations->at(imu) <<", dB "<< mus_dB->at(imu)
   //        <<", pt "<< mus_pt->at(imu)<<", MuonPTThreshold "<< MuonPTThreshold
-  //        <<", eta "<< mus_eta->at(imu)<<", relIso "<< relIso
+  //        <<", eta "<< mus_eta->at(imu)
   //        <<", hasPFMatch "<< hasPFMatch(imu, particleId::muon, pfIdx)<<", tk_vx "<< mus_tk_vx->at(imu)<<endl;
   return (mus_isGlobalMuon->at(imu) > 0
 	  && mus_isPFMuon->at(imu) > 0
@@ -408,19 +442,21 @@ bool ra4_handler::passedMuonSelection(uint imu){
 			mus_tk_py->at(imu), mus_tk_pz->at(imu), 0)) < 0.5
 	  && mus_pt->at(imu) >= MuonPTThreshold
 	  && fabs(mus_eta->at(imu)) <= 2.4
-	  && relIso < 0.12
 	  && hasPFMatch(imu, particleId::muon, pfIdx)); 
-  
+}
+
+bool ra4_handler::passedMuonSelection(uint imu){
+  if(imu >= mus_pt->size()) return false;
+
+  float relIso = GetMuonIsolation(imu);  
+  return (passedBaseMuonSelection(imu) && relIso < 0.12); 
 }
 
 bool ra4_handler::passedMuonVetoSelection(uint imu){
   if(imu >= mus_pt->size()) return false;
 
-  double sumEt = mus_pfIsolationR03_sumNeutralHadronEt->at(imu) + mus_pfIsolationR03_sumPhotonEt->at(imu) 
-    - 0.5*mus_pfIsolationR03_sumPUPt->at(imu);
-  if(sumEt<0.0) sumEt=0.0;
-  float relIso = (mus_pfIsolationR03_sumChargedHadronPt->at(imu) + sumEt)/mus_pt->at(imu);
   int pfIdx=-1; 
+  float relIso = GetMuonIsolation(imu);
   
   return ((mus_isGlobalMuon->at(imu) >0 || mus_isTrackerMuon->at(imu) >0)
 	  && mus_isPFMuon->at(imu) > 0
@@ -432,23 +468,25 @@ bool ra4_handler::passedMuonVetoSelection(uint imu){
 	  && hasPFMatch(imu, particleId::muon, pfIdx));      
 }
 
-bool ra4_handler::passedElectronSelection(uint iel){
+float ra4_handler::GetElectronIsolation(uint iel){
+  double sumEt = els_PFphotonIsoR03->at(iel) + els_PFneutralHadronIsoR03->at(iel) 
+    - rho_kt6PFJetsForIsolation2011 * GetEffectiveArea(els_scEta->at(iel), IsMC());
+  if(sumEt<0.0) sumEt=0;
+  return (els_PFchargedHadronIsoR03->at(iel) + sumEt)/els_pt->at(iel);
+}
+
+bool ra4_handler::passedBaseElectronSelection(uint iel){
   if(iel >= els_pt->size()) return false;
 
   //   cout<<"pt "<<els_pt->at(iel)<<", thresh "<<ElectronPTThreshold<<", eta "<<els_scEta->at(iel)
   //       <<", conversion "<<els_hasMatchedConversion->at(iel)<<endl;
   float d0PV = els_d0dum->at(iel)-pv_x->at(0)*sin(els_tk_phi->at(iel))+pv_y->at(0)*cos(els_tk_phi->at(iel));
-  double sumEt = els_PFphotonIsoR03->at(iel) + els_PFneutralHadronIsoR03->at(iel) 
-    - rho_kt6PFJetsForIsolation2011 * GetEffectiveArea(els_scEta->at(iel), IsMC());
-  if(sumEt<0.0) sumEt=0;
-  double relIso = (els_PFchargedHadronIsoR03->at(iel) + sumEt)/els_pt->at(iel);
   int pfIdx=-1;
   
   //   cout<<"pt "<<els_pt->at(iel)<<", thresh "<<ElectronPTThreshold<<", eta "<<els_scEta->at(iel)
-  //       <<", relIso "<<relIso<<", conversion "<<els_hasMatchedConversion->at(iel)<<endl;
+  //       <<", conversion "<<els_hasMatchedConversion->at(iel)<<endl;
   return (els_pt->at(iel) > ElectronPTThreshold
 	  && fabs(els_scEta->at(iel)) < 2.5
-	  && relIso < 0.15
 	  && !els_hasMatchedConversion->at(iel)
 	  && els_n_inner_layer->at(iel) <= 1
 	  && fabs(getDZ(els_vx->at(iel), els_vy->at(iel), els_vz->at(iel), cos(els_tk_phi->at(iel))*els_tk_pt->at(iel), 
@@ -467,6 +505,13 @@ bool ra4_handler::passedElectronSelection(uint iel){
 		  && els_sigmaIEtaIEta->at(iel) < 0.03
 		  && els_hadOverEm->at(iel) < 0.10 ))
 	  );
+}
+
+bool ra4_handler::passedElectronSelection(uint iel){
+  if(iel >= els_pt->size()) return false;
+
+  double relIso = GetElectronIsolation(iel);
+  return (passedBaseElectronSelection(iel) && relIso < 0.15);
 }
 
 bool ra4_handler::passedElectronVetoSelection(uint iel){

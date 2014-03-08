@@ -10,19 +10,31 @@ int main(){
   TString name;
   // Add all small_tree variables here
   vector<TString> variables;
+  variables.push_back("int nel");
+  variables.push_back("int nvel");
+  variables.push_back("int nmu");
+  variables.push_back("int nvmu");
+  variables.push_back("vector<int> trigger");
+  variables.push_back("vector<int> njets");  // Number of jets for different pT thresholds
   variables.push_back("float weight");
   variables.push_back("float wpu");
+  variables.push_back("float wlumi");
   variables.push_back("float ht");
   variables.push_back("float met");
   variables.push_back("float metsig");
   variables.push_back("float onmet");
   variables.push_back("float ntrupv");  // Thinking about casting it into an int
-  variables.push_back("int nel");
-  variables.push_back("int nvel");
-  variables.push_back("int nmu");
-  variables.push_back("int nvmu");
-  variables.push_back("int njets");
-  variables.push_back("vector<int> trigger");
+  variables.push_back("vector<float> jets_pt");
+  variables.push_back("vector<float> jets_eta");
+  variables.push_back("vector<float> jets_phi");
+  variables.push_back("vector<float> mus_pt");
+  variables.push_back("vector<float> mus_eta");
+  variables.push_back("vector<float> mus_phi");
+  variables.push_back("vector<float> mus_reliso");
+  variables.push_back("vector<float> els_pt");
+  variables.push_back("vector<float> els_eta");
+  variables.push_back("vector<float> els_phi");
+  variables.push_back("vector<float> els_reliso");
 
   std::ofstream cppFile("src/small_tree.cpp"), hppFile("inc/small_tree.hpp");
   
