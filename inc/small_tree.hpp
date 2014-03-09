@@ -24,6 +24,8 @@ public:
   int nvmu;
   vector<int> trigger;
   vector<int> njets;
+  vector<int> mus_tru;
+  vector<int> els_tru;
   float weight;
   float wpu;
   float wlumi;
@@ -32,17 +34,17 @@ public:
   float metsig;
   float onmet;
   float ntrupv;
-  vector<float> jets_pt;
-  vector<float> jets_eta;
-  vector<float> jets_phi;
-  vector<float> mus_pt;
-  vector<float> mus_eta;
-  vector<float> mus_phi;
-  vector<float> mus_reliso;
-  vector<float> els_pt;
-  vector<float> els_eta;
-  vector<float> els_phi;
-  vector<float> els_reliso;
+  vector<double> jets_pt;
+  vector<double> jets_eta;
+  vector<double> jets_phi;
+  vector<double> mus_pt;
+  vector<double> mus_eta;
+  vector<double> mus_phi;
+  vector<double> mus_reliso;
+  vector<double> els_pt;
+  vector<double> els_eta;
+  vector<double> els_phi;
+  vector<double> els_reliso;
 
   void Fill();
   void Write();

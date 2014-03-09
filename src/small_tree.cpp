@@ -16,6 +16,8 @@ small_tree::small_tree():
   tree.Branch("nvmu", &nvmu);
   tree.Branch("trigger", &trigger);
   tree.Branch("njets", &njets);
+  tree.Branch("mus_tru", &mus_tru);
+  tree.Branch("els_tru", &els_tru);
   tree.Branch("weight", &weight);
   tree.Branch("wpu", &wpu);
   tree.Branch("wlumi", &wlumi);
@@ -47,6 +49,8 @@ small_tree::small_tree(TString filename):
   chain.SetBranchAddress("nvmu", &nvmu);
   chain.SetBranchAddress("trigger", &trigger);
   chain.SetBranchAddress("njets", &njets);
+  chain.SetBranchAddress("mus_tru", &mus_tru);
+  chain.SetBranchAddress("els_tru", &els_tru);
   chain.SetBranchAddress("weight", &weight);
   chain.SetBranchAddress("wpu", &wpu);
   chain.SetBranchAddress("wlumi", &wlumi);

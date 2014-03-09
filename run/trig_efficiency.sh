@@ -42,8 +42,8 @@ fi
 # ./run/calc_trig_efficiency.exe -i SingleMu_Run2012D-PromptReco-v1_AOD_UCSB1628ra4_v67 -m v67_f997 -n $Nevents  | tee log/make_2012D.log 
 
 
- ./run/make_tree.exe -i SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71 -n $Nevents  -m 1145_800 | tee log/maketree_14TeV_T1tttt.log 
- ./run/make_tree.exe -i SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68 -n $Nevents  -m 1150_800 | tee log/maketree_8TeV_T1tttt.log 
+ ./run/make_tree.exe -i SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71 -n $Nevents  -m 1145_500 | tee log/maketree_14TeV_T1tttt.log 
+ ./run/make_tree.exe -i SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68 -n $Nevents  -m 1150_525 | tee log/maketree_8TeV_T1tttt.log 
  ./run/make_tree.exe -i TTbar_TuneZ2star_13TeV-powheg-tauola_Summer13dr53X-PU25bx25_START53_V19D-v1_AODSIM_UCSB2027_v71 -n $Nevents  | tee log/maketree_13TeV_ttbar_25PU.log 
  ./run/make_tree.exe -i TT_CT10_TuneZ2star_8TeV-powheg-tauola_Summer12_DR53X-PU_S10_START53_V7A-v2_AODSIM_UCSB1439ra4_v65 -n $Nevents -m _f99 | tee log/maketree_8TeV_ttbar.log
 

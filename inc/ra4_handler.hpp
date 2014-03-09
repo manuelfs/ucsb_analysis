@@ -42,8 +42,7 @@ public:
   vector<int> GetJets(vector<int> electrons, vector<int> muons, float &HT);
 
   // Leptons
-  static const int LeptonPTThreshold       = 15; // statics cannot be floats
-  static const int MuonPTThreshold         = 20;
+  static const int MuonPTThreshold         = 20; // statics cannot be floats
   static const int MuonVetoPTThreshold     = 15;
   static const int ElectronPTThreshold     = 20;
   static const int ElectronVetoPTThreshold = 15;
@@ -59,6 +58,8 @@ public:
   float GetMuonIsolation(uint imu);
   bool passedBaseElectronSelection(uint iel);
   bool passedBaseMuonSelection(uint iel);
+  int GetTrueElectron(int imu, double &closest_dR);
+  int GetTrueMuon(int imu, double &closest_dR);
 
 };
 
