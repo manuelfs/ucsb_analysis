@@ -105,6 +105,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     vector<int> veto_electrons = GetElectrons(false);
     vector<int> signal_muons = GetMuons();
     vector<int> veto_muons = GetMuons(false);
+    vector<int> good_jets = GetJets(signal_electrons, signal_muons, veto_electrons, veto_muons, tree.ht);
     tree.nel  = signal_electrons.size();
     tree.nvel = veto_electrons.size();
     tree.nmu  = signal_muons.size();
@@ -344,7 +345,7 @@ void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
     vector<int> veto_electrons = GetElectrons(false);
     vector<int> signal_muons = GetMuons();
     vector<int> veto_muons = GetMuons(false);
-    vector<int> good_jets = GetJets(signal_electrons, signal_muons, HtMet[0]);
+    vector<int> good_jets = GetJets(signal_electrons, signal_muons, veto_electrons, veto_muons, HtMet[0]);
 
     //     cout<<entry<<": HT "<<HtMet[0]<<", MET "<<HtMet[1]<<", "<<good_jets.size()<<" jets, "
     //  	<<signal_muons.size()<<" signal muons, "
@@ -481,33 +482,6 @@ vector<int> ra4_handler::GetElectrons(bool doSignal){
   return electrons;
 }
 
-vector<int> ra4_handler::GetJets(vector<int> electrons, vector<int> muons, float &HT){
-  vector<int> jets;
-  HT = 0;
-  for(uint ijet = 0; ijet<jets_AK5PFclean_pt->size(); ijet++) {
-    if(!isGoodJet(ijet)) continue;
-    double tmpdR;
-    bool useJet = true;
-    for(uint index = 0; index < electrons.size(); index++) {
-      tmpdR = dR(jets_AK5PFclean_eta->at(ijet), els_eta->at(electrons[index]),
-		 jets_AK5PFclean_phi->at(ijet), els_phi->at(electrons[index]));	
-      if(tmpdR < 0.3){useJet = false; break;}
-    }      
-    if(!useJet) continue;
-    for(uint index = 0; index < muons.size();index++) {
-      tmpdR = dR(jets_AK5PFclean_eta->at(ijet), mus_eta->at(muons[index]),
-		 jets_AK5PFclean_phi->at(ijet), mus_phi->at(muons[index]));
-	
-      if(tmpdR < 0.1){useJet = false; break;}
-    }
-    if(!useJet) continue;
-
-    if(jets_AK5PFclean_pt->at(ijet) > JetPTThresholdHT) HT += jets_AK5PFclean_pt->at(ijet);
-    if(jets_AK5PFclean_pt->at(ijet) > JetPTThresholdNJ) jets.push_back(ijet);
-  } // Loop over jets	    
-  return jets;
-}
-
 float ra4_handler::GetMuonIsolation(uint imu){
   if(imu >= mus_pt->size()) return -999;
   double sumEt = mus_pfIsolationR03_sumNeutralHadronEt->at(imu) + mus_pfIsolationR03_sumPhotonEt->at(imu) 
@@ -540,8 +514,8 @@ bool ra4_handler::passedBaseMuonSelection(uint imu){
 	  && fabs(getDZ(mus_tk_vx->at(imu), mus_tk_vy->at(imu), mus_tk_vz->at(imu), mus_tk_px->at(imu), 
 			mus_tk_py->at(imu), mus_tk_pz->at(imu), 0)) < 0.5
 	  && mus_pt->at(imu) >= MuonPTThreshold
-	  && fabs(mus_eta->at(imu)) <= 2.4
-	  && hasPFMatch(imu, particleId::muon, pfIdx)); 
+	  && hasPFMatch(imu, particleId::muon, pfIdx)
+	  && fabs(mus_eta->at(imu)) <= 2.4);
 }
 
 bool ra4_handler::passedMuonSelection(uint imu){
@@ -554,7 +528,6 @@ bool ra4_handler::passedMuonSelection(uint imu){
 bool ra4_handler::passedMuonVetoSelection(uint imu){
   if(imu >= mus_pt->size()) return false;
 
-  int pfIdx=-1; 
   float relIso = GetMuonIsolation(imu);
   
   return ((mus_isGlobalMuon->at(imu) >0 || mus_isTrackerMuon->at(imu) >0)
@@ -563,8 +536,7 @@ bool ra4_handler::passedMuonVetoSelection(uint imu){
 			mus_tk_py->at(imu), mus_tk_pz->at(imu), 0)) < 0.5 
 	  && mus_pt->at(imu) >= MuonVetoPTThreshold
 	  && fabs(mus_eta->at(imu)) <= 2.5
-	  && relIso < 0.2
-	  && hasPFMatch(imu, particleId::muon, pfIdx));      
+	  && relIso < 0.2);
 }
 
 float ra4_handler::GetElectronIsolation(uint iel){
@@ -593,16 +565,16 @@ bool ra4_handler::passedBaseElectronSelection(uint iel){
 	  && fabs(1./els_caloEnergy->at(iel) - els_eOverPIn->at(iel)/els_caloEnergy->at(iel)) < 0.05 
 	  && hasPFMatch(iel, particleId::electron, pfIdx) 
 	  && fabs(d0PV) < 0.02 
-	  && ((els_isEB->at(iel)
+	  && ((els_isEB->at(iel) // Endcap selection
 	       && fabs(els_dEtaIn->at(iel)) < 0.004
 	       && fabs(els_dPhiIn->at(iel)) < 0.06
 	       && els_sigmaIEtaIEta->at(iel) < 0.01
-	       && els_hadOverEm->at(iel) < 0.12 )
-	      || (els_isEE->at(iel)
-		  && fabs(els_dEtaIn->at(iel)) < 0.007
-		  && fabs(els_dPhiIn->at(iel)) < 0.03
-		  && els_sigmaIEtaIEta->at(iel) < 0.03
-		  && els_hadOverEm->at(iel) < 0.10 ))
+	       && els_hadOverEm->at(iel) < 0.12 ) ||
+	      (els_isEE->at(iel)  // Barrel selection
+	       && fabs(els_dEtaIn->at(iel)) < 0.007
+	       && fabs(els_dPhiIn->at(iel)) < 0.03
+	       && els_sigmaIEtaIEta->at(iel) < 0.03
+	       && els_hadOverEm->at(iel) < 0.10 ))
 	  );
 }
 
@@ -617,10 +589,7 @@ bool ra4_handler::passedElectronVetoSelection(uint iel){
   if(iel >= els_pt->size()) return false;
 
   float d0PV = els_d0dum->at(iel)-pv_x->at(0)*sin(els_tk_phi->at(iel))+pv_y->at(0)*cos(els_tk_phi->at(iel));
-  double sumEt = els_PFphotonIsoR03->at(iel) + els_PFneutralHadronIsoR03->at(iel) 
-    - rho_kt6PFJetsForIsolation2011 * GetEffectiveArea(els_scEta->at(iel), IsMC());
-  if(sumEt<0.0) sumEt=0;
-  double relIso = (els_PFchargedHadronIsoR03->at(iel) + sumEt)/els_pt->at(iel);
+  double relIso = GetElectronIsolation(iel);
   
   return (els_pt->at(iel) > ElectronVetoPTThreshold
 	  && fabs(els_scEta->at(iel)) < 2.5
@@ -628,15 +597,15 @@ bool ra4_handler::passedElectronVetoSelection(uint iel){
 	  && fabs(getDZ(els_vx->at(iel), els_vy->at(iel), els_vz->at(iel), cos(els_tk_phi->at(iel))*els_tk_pt->at(iel), 
 			sin(els_tk_phi->at(iel))*els_tk_pt->at(iel), els_tk_pz->at(iel), 0)) < 0.2
 	  && fabs(d0PV) < 0.04 
-	  && ((els_isEB->at(iel)
+	  && ((els_isEB->at(iel) // Endcap selection
 	       && fabs(els_dEtaIn->at(iel)) < 0.007
 	       && fabs(els_dPhiIn->at(iel)) < 0.8
 	       && els_sigmaIEtaIEta->at(iel) < 0.01
-	       && els_hadOverEm->at(iel) < 0.15)
-	      || (els_isEE->at(iel)
-		  && fabs(els_dEtaIn->at(iel)) < 0.01
-		  && fabs(els_dPhiIn->at(iel)) < 0.7
-		  && els_sigmaIEtaIEta->at(iel) < 0.03))
+	       && els_hadOverEm->at(iel) < 0.15) ||
+	      (els_isEE->at(iel)  // Barrel selection
+	       && fabs(els_dEtaIn->at(iel)) < 0.01
+	       && fabs(els_dPhiIn->at(iel)) < 0.7
+	       && els_sigmaIEtaIEta->at(iel) < 0.03))
 	  );  
 }
 
@@ -704,6 +673,46 @@ bool ra4_handler::hasPFMatch(int index, particleId::leptonType type, int &pfIdx)
 
 double ra4_handler::getDZ(double vx, double vy, double vz, double px, double py, double pz, int firstGoodVertex){
   return vz - pv_z->at(firstGoodVertex) -((vx-pv_x->at(firstGoodVertex))*px+(vy-pv_y->at(firstGoodVertex))*py)*pz/(px*px+py*py); 
+}
+
+vector<int> ra4_handler::GetJets(vector<int> SigEl, vector<int> SigMu, vector<int> VetoEl, vector<int> VetoMu, float &HT){
+  vector<int> jets;
+  HT = 0;
+  for(uint ijet = 0; ijet<jets_AK5PFclean_pt->size(); ijet++) {
+    if(!isGoodJet(ijet)) continue;
+    double tmpdR;
+    bool useJet = true;
+    for(uint index = 0; index < SigEl.size(); index++) {
+      tmpdR = dR(jets_AK5PFclean_eta->at(ijet), els_eta->at(SigEl[index]),
+		 jets_AK5PFclean_phi->at(ijet), els_phi->at(SigEl[index]));	
+      if(tmpdR < 0.3){useJet = false; break;}
+    }      
+    if(!useJet) continue;
+    for(uint index = 0; index < SigMu.size();index++) {
+      tmpdR = dR(jets_AK5PFclean_eta->at(ijet), mus_eta->at(SigMu[index]),
+		 jets_AK5PFclean_phi->at(ijet), mus_phi->at(SigMu[index]));
+	
+      if(tmpdR < 0.1){useJet = false; break;}
+    }
+    if(!useJet) continue;
+    for(uint index = 0; index < VetoEl.size(); index++) {
+      tmpdR = dR(jets_AK5PFclean_eta->at(ijet), els_eta->at(VetoEl[index]),
+		 jets_AK5PFclean_phi->at(ijet), els_phi->at(VetoEl[index]));	
+      if(tmpdR < 0.3){useJet = false; break;}
+    }      
+    if(!useJet) continue;
+    for(uint index = 0; index < VetoMu.size();index++) {
+      tmpdR = dR(jets_AK5PFclean_eta->at(ijet), mus_eta->at(VetoMu[index]),
+		 jets_AK5PFclean_phi->at(ijet), mus_phi->at(VetoMu[index]));
+	
+      if(tmpdR < 0.1){useJet = false; break;}
+    }
+    if(!useJet) continue;
+
+    if(jets_AK5PFclean_pt->at(ijet) > JetPTThresholdHT) HT += jets_AK5PFclean_pt->at(ijet);
+    if(jets_AK5PFclean_pt->at(ijet) > JetPTThresholdNJ) jets.push_back(ijet);
+  } // Loop over jets	    
+  return jets;
 }
 
 int ra4_handler::GetNumGoodJets(double ptThresh) const{

@@ -39,7 +39,7 @@ public:
   int GetNumGoodJets(double ptThresh=Def_ptThreshold) const;
   bool isGoodJet(const unsigned int ijet, const double ptThresh=Def_ptThreshold, const double etaThresh=Def_etaThreshold) const;
   bool passedPFJetSelection(const unsigned int ijet) const;
-  vector<int> GetJets(vector<int> electrons, vector<int> muons, float &HT);
+  vector<int> GetJets(vector<int> SigEl, vector<int> SigMu, vector<int> VetoEl, vector<int> VetoMu, float &HT);
 
   // Leptons
   static const int MuonPTThreshold         = 20; // statics cannot be floats
