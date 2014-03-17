@@ -77,7 +77,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
   int nthresh = 6;
   tree.njets.resize(nthresh);
   double deltaR;
-  int imcdoc, momID;
+  int mcID, mcmomID, lepID;
 
   vector<float> wpu_min, wpu_max, wpu;
   ifstream wpu_file("txt/weights_sms_pu.txt");
@@ -136,61 +136,79 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 
 
     ////////////////   Leptons   ////////////////
-    tree.els_pt.resize(0);
-    tree.els_eta.resize(0);
-    tree.els_phi.resize(0);
-    tree.els_reliso.resize(0);
-    tree.els_tru.resize(0);
-    tree.mus_pt.resize(0);
-    tree.mus_eta.resize(0);
-    tree.mus_phi.resize(0);
-    tree.mus_reliso.resize(0);
-    tree.mus_tru.resize(0);
+    tree.lep_pt.resize(0);
+    tree.lep_eta.resize(0);
+    tree.lep_phi.resize(0);
+    tree.lep_reliso.resize(0);
+    tree.lep_id.resize(0);
+    tree.lep_tru_id.resize(0);
+    tree.lep_tru_momid.resize(0);
+    tree.lep_tru_dr.resize(0);
     for(uint index=0; index<els_pt->size(); index++){
       if(!passedBaseElectronSelection(index)) continue;
-      tree.els_pt.push_back(els_pt->at(index));
-      tree.els_eta.push_back(els_eta->at(index));
-      tree.els_phi.push_back(els_phi->at(index));
-      tree.els_reliso.push_back(GetElectronIsolation(index));
-      imcdoc = GetTrueElectron((int)index, deltaR);
-      if(imcdoc<0) momID = -1;
-      else momID = abs((int)mc_doc_mother_id->at(imcdoc));
-      if(imcdoc<0 || deltaR>0.2 || momID!=pdtlund::W_plus) tree.els_tru.push_back(0);
-      else tree.els_tru.push_back(1);
-//       cout<<"Rec el eta "<<tree.els_eta[tree.els_pt.size()-1]<<", phi "<<tree.els_phi[tree.els_pt.size()-1]
-// 	  <<", tru "<<tree.els_tru[tree.els_pt.size()-1]<<", imcdoc "<<imcdoc
-// 	  <<", momID "<<momID<<", dR "<<deltaR<<endl;
+
+      if(els_charge->at(index)>0) lepID = pdtlund::e_minus;
+      else lepID = pdtlund::e_plus;
+      mcID = GetTrueElectron((int)index, mcmomID, deltaR);
+      tree.lep_pt.push_back(els_pt->at(index));
+      tree.lep_eta.push_back(els_eta->at(index));
+      tree.lep_phi.push_back(els_phi->at(index));
+      tree.lep_reliso.push_back(GetElectronIsolation(index));
+      tree.lep_id.push_back(lepID);
+      tree.lep_tru_id.push_back(mcID);
+      tree.lep_tru_momid.push_back(mcmomID);
+      tree.lep_tru_dr.push_back(deltaR);
+//       cout<<"Rec el eta "<<tree.lep_eta[tree.lep_pt.size()-1]<<", phi "<<tree.lep_phi[tree.lep_pt.size()-1]
+//   	  <<", tru id "<<tree.lep_tru_id[tree.lep_pt.size()-1]<<", tru momid "<<tree.lep_tru_momid[tree.lep_pt.size()-1]
+// 	  <<", dR "<<deltaR<<endl;
     }
     for(uint index=0; index<mus_pt->size(); index++){
       if(!passedBaseMuonSelection(index)) continue;
-      tree.mus_pt.push_back(mus_pt->at(index));
-      tree.mus_eta.push_back(mus_eta->at(index));
-      tree.mus_phi.push_back(mus_phi->at(index));
-      tree.mus_reliso.push_back(GetMuonIsolation(index));
-      imcdoc = GetTrueMuon((int)index, deltaR);
-      if(imcdoc<0) momID = -1;
-      else momID = abs((int)mc_doc_mother_id->at(imcdoc));
-      if(imcdoc<0 || deltaR>0.2 || momID!=pdtlund::W_plus) tree.mus_tru.push_back(0);
-      else tree.mus_tru.push_back(1);
-//        cout<<"Rec mu eta "<<tree.mus_eta[tree.mus_pt.size()-1]<<", phi "<<tree.mus_phi[tree.mus_pt.size()-1]
-//  	  <<", tru "<<tree.mus_tru[tree.mus_pt.size()-1]<<", imcdoc "<<imcdoc
-//  	  <<", momID "<<momID<<", dR "<<deltaR<<endl;
+
+      if(mus_charge->at(index)>0) lepID = pdtlund::mu_minus;
+      else lepID = pdtlund::mu_plus;
+      mcID = GetTrueMuon((int)index, mcmomID, deltaR);
+      tree.lep_pt.push_back(mus_pt->at(index));
+      tree.lep_eta.push_back(mus_eta->at(index));
+      tree.lep_phi.push_back(mus_phi->at(index));
+      tree.lep_reliso.push_back(GetMuonIsolation(index));
+      tree.lep_id.push_back(lepID);
+      tree.lep_tru_id.push_back(mcID);
+      tree.lep_tru_momid.push_back(mcmomID);
+      tree.lep_tru_dr.push_back(deltaR);
+
+//          cout<<"Rec mu pT "<<tree.lep_pt[tree.lep_pt.size()-1]<<", eta "<<tree.lep_eta[tree.lep_pt.size()-1]
+//  	  <<", phi "<<tree.lep_phi[tree.lep_pt.size()-1]
+//    	  <<", tru id "<<tree.lep_tru_id[tree.lep_pt.size()-1]<<", tru momid "<<tree.lep_tru_momid[tree.lep_pt.size()-1]
+//    	  <<", dR "<<deltaR<<endl;
    }
 
-//      if(tree.mus_pt.size()>0){
-//         for(unsigned int imc = 0; imc < mc_doc_id->size(); imc++){
-// 	  if(abs(mc_doc_id->at(imc)) == pdtlund::mu_minus)
-//  	   cout<<imc<<": ID "<<(int)mc_doc_id->at(imc)<<",   \tMom ID "<<(int)mc_doc_mother_id->at(imc)
-//      	    <<", \tGMom ID "<<(int)mc_doc_grandmother_id->at(imc)
-//      	    <<", \tGGMom ID "<<(int)mc_doc_ggrandmother_id->at(imc)
-//      	    <<", \tN daughters "<<mc_doc_numOfDaughters->at(imc)
-//      	    <<",   \tN moms "<<mc_doc_numOfMothers->at(imc)
-//  	       <<",   \teta "<<mc_doc_eta->at(imc)
-//  	       <<",   \tphi "<<mc_doc_phi->at(imc)<<endl;
+//        if(tree.lep_pt.size()>0){
+//           for(unsigned int imc = 0; imc < mc_doc_id->size(); imc++){
+//  	   //if(abs(mc_doc_id->at(imc)) == pdtlund::mu_minus)
+//    	   cout<<imc<<": ID "<<(int)mc_doc_id->at(imc)<<",   \tMom ID "<<(int)mc_doc_mother_id->at(imc)
+//  	       <<", \tGMom ID "<<(int)mc_doc_grandmother_id->at(imc)
+//  	       <<", \tGGMom ID "<<(int)mc_doc_ggrandmother_id->at(imc)
+//  	       <<", \tN daughters "<<mc_doc_numOfDaughters->at(imc)
+//  	       <<",   \tN moms "<<mc_doc_numOfMothers->at(imc)
+//    	       <<",   \tpT "<<mc_doc_pt->at(imc)
+//    	       <<",   \teta "<<mc_doc_eta->at(imc)
+//    	       <<",   \tphi "<<mc_doc_phi->at(imc)<<endl;
+//           }
+//           cout<<endl;
 
-//         }
-//         cout<<endl;
-//      }
+//           for(unsigned int imc = 0; imc < mc_mus_id->size(); imc++){
+//  	   //if(abs(mc_mus_id->at(imc)) == pdtlund::mu_minus)
+//    	   cout<<imc<<": ID "<<(int)mc_mus_id->at(imc)<<",   \tMom ID "<<(int)mc_mus_mother_id->at(imc)
+//  	       <<", \tGMom ID "<<(int)mc_mus_grandmother_id->at(imc)
+//  	       <<", \tGGMom ID "<<(int)mc_mus_ggrandmother_id->at(imc)
+//  	       <<", \tN daughters "<<mc_mus_numOfDaughters->at(imc)
+//    	       <<",   \tpT "<<mc_mus_pt->at(imc)
+//    	       <<",   \teta "<<mc_mus_eta->at(imc)
+//    	       <<",   \tphi "<<mc_mus_phi->at(imc)<<endl;
+//           }
+//           cout<<endl;
+//        }
 
     ////////////////   METS   ////////////////
     tree.met = pfTypeImets_et->at(0);
@@ -433,34 +451,75 @@ vector<int> ra4_handler::GetMuons(bool doSignal){
   return muons;
 }
 
-int ra4_handler::GetTrueMuon(int imu, double &closest_dR){
-  if(imu < 0 || imu >= (int)mus_eta->size()) return -1;
+int ra4_handler::GetTrueMuon(int index, int &momID, double &closest_dR){
+  if(index < 0 || index >= (int)mus_eta->size()) return -1;
 
-  int closest_imc = -1; 
+  int closest_imc = -1, idLepton = 0; 
   double dR = 9999.; closest_dR = 9999.;
-  double RecEta = mus_eta->at(imu), RecPhi = mus_phi->at(imu);
   double MCEta, MCPhi;
-  for(unsigned int imc=0; imc < mc_doc_id->size(); imc++){
-    if(abs(mc_doc_id->at(imc)) != pdtlund::mu_minus) continue;
-    MCEta = mc_doc_eta->at(imc); MCPhi = mc_doc_phi->at(imc);
+  double RecEta = mus_eta->at(index), RecPhi = mus_phi->at(index);
+  for(unsigned int imc=0; imc < mc_mus_id->size(); imc++){
+    MCEta = mc_mus_eta->at(imc); MCPhi = mc_mus_phi->at(imc);
     dR = sqrt(pow(RecEta-MCEta,2) + pow(RecPhi-MCPhi,2));
     if(dR < closest_dR) {
       closest_dR = dR;
       closest_imc = imc;
     }
   }
-  return closest_imc;
+  if(closest_imc >= 0){
+    idLepton = static_cast<int>(mc_mus_id->at(closest_imc));
+    momID = static_cast<int>(mc_mus_mother_id->at(closest_imc));
+    if(idLepton == momID) momID = static_cast<int>(mc_mus_ggrandmother_id->at(closest_imc));
+  } else {
+    closest_imc = GetTrueParticle(RecEta, RecPhi, closest_dR);
+    if(closest_imc >= 0){
+      momID = static_cast<int>(mc_doc_mother_id->at(closest_imc));
+      idLepton = static_cast<int>(mc_doc_id->at(closest_imc));
+    } else {
+      momID = 0;
+      idLepton = 0;
+    }
+  }
+  return idLepton;
 }
 
-int ra4_handler::GetTrueElectron(int iel, double &closest_dR){
-  if(iel < 0 || iel >= (int)els_eta->size()) return -1;
+int ra4_handler::GetTrueElectron(int index, int &momID, double &closest_dR){
+  if(index < 0 || index >= (int)els_eta->size()) return -1;
 
+  int closest_imc = -1, idLepton = 0; 
+  double dR = 9999.; closest_dR = 9999.;
+  double MCEta, MCPhi;
+  double RecEta = els_eta->at(index), RecPhi = els_phi->at(index);
+  for(unsigned int imc=0; imc < mc_electrons_id->size(); imc++){
+    MCEta = mc_electrons_eta->at(imc); MCPhi = mc_electrons_phi->at(imc);
+    dR = sqrt(pow(RecEta-MCEta,2) + pow(RecPhi-MCPhi,2));
+    if(dR < closest_dR) {
+      closest_dR = dR;
+      closest_imc = imc;
+    }
+  }
+  if(closest_imc >= 0){
+    idLepton = static_cast<int>(mc_electrons_id->at(closest_imc));
+    momID = static_cast<int>(mc_electrons_mother_id->at(closest_imc));
+    if(idLepton == momID) momID = static_cast<int>(mc_electrons_ggrandmother_id->at(closest_imc));
+  } else {
+    closest_imc = GetTrueParticle(RecEta, RecPhi, closest_dR);
+    if(closest_imc >= 0){
+      momID = static_cast<int>(mc_doc_mother_id->at(closest_imc));
+      idLepton = static_cast<int>(mc_doc_id->at(closest_imc));
+    } else {
+      momID = 0;
+      idLepton = 0;
+    }
+  }
+  return idLepton;
+}
+
+int ra4_handler::GetTrueParticle(double RecEta, double RecPhi, double &closest_dR){
   int closest_imc = -1; 
   double dR = 9999.; closest_dR = 9999.;
-  double RecEta = els_eta->at(iel), RecPhi = els_phi->at(iel);
   double MCEta, MCPhi;
   for(unsigned int imc=0; imc < mc_doc_id->size(); imc++){
-    if(abs(mc_doc_id->at(imc)) != pdtlund::e_minus) continue;
     MCEta = mc_doc_eta->at(imc); MCPhi = mc_doc_phi->at(imc);
     dR = sqrt(pow(RecEta-MCEta,2) + pow(RecPhi-MCPhi,2));
     if(dR < closest_dR) {

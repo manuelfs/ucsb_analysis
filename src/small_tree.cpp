@@ -16,8 +16,9 @@ small_tree::small_tree():
   tree.Branch("nvmu", &nvmu);
   tree.Branch("trigger", &trigger);
   tree.Branch("njets", &njets);
-  tree.Branch("mus_tru", &mus_tru);
-  tree.Branch("els_tru", &els_tru);
+  tree.Branch("lep_id", &lep_id);
+  tree.Branch("lep_tru_id", &lep_tru_id);
+  tree.Branch("lep_tru_momid", &lep_tru_momid);
   tree.Branch("weight", &weight);
   tree.Branch("wpu", &wpu);
   tree.Branch("wlumi", &wlumi);
@@ -29,14 +30,11 @@ small_tree::small_tree():
   tree.Branch("jets_pt", &jets_pt);
   tree.Branch("jets_eta", &jets_eta);
   tree.Branch("jets_phi", &jets_phi);
-  tree.Branch("mus_pt", &mus_pt);
-  tree.Branch("mus_eta", &mus_eta);
-  tree.Branch("mus_phi", &mus_phi);
-  tree.Branch("mus_reliso", &mus_reliso);
-  tree.Branch("els_pt", &els_pt);
-  tree.Branch("els_eta", &els_eta);
-  tree.Branch("els_phi", &els_phi);
-  tree.Branch("els_reliso", &els_reliso);
+  tree.Branch("lep_pt", &lep_pt);
+  tree.Branch("lep_eta", &lep_eta);
+  tree.Branch("lep_phi", &lep_phi);
+  tree.Branch("lep_reliso", &lep_reliso);
+  tree.Branch("lep_tru_dr", &lep_tru_dr);
   isReadOnly = false;
 }
 
@@ -49,8 +47,9 @@ small_tree::small_tree(TString filename):
   chain.SetBranchAddress("nvmu", &nvmu);
   chain.SetBranchAddress("trigger", &trigger);
   chain.SetBranchAddress("njets", &njets);
-  chain.SetBranchAddress("mus_tru", &mus_tru);
-  chain.SetBranchAddress("els_tru", &els_tru);
+  chain.SetBranchAddress("lep_id", &lep_id);
+  chain.SetBranchAddress("lep_tru_id", &lep_tru_id);
+  chain.SetBranchAddress("lep_tru_momid", &lep_tru_momid);
   chain.SetBranchAddress("weight", &weight);
   chain.SetBranchAddress("wpu", &wpu);
   chain.SetBranchAddress("wlumi", &wlumi);
@@ -62,14 +61,11 @@ small_tree::small_tree(TString filename):
   chain.SetBranchAddress("jets_pt", &jets_pt);
   chain.SetBranchAddress("jets_eta", &jets_eta);
   chain.SetBranchAddress("jets_phi", &jets_phi);
-  chain.SetBranchAddress("mus_pt", &mus_pt);
-  chain.SetBranchAddress("mus_eta", &mus_eta);
-  chain.SetBranchAddress("mus_phi", &mus_phi);
-  chain.SetBranchAddress("mus_reliso", &mus_reliso);
-  chain.SetBranchAddress("els_pt", &els_pt);
-  chain.SetBranchAddress("els_eta", &els_eta);
-  chain.SetBranchAddress("els_phi", &els_phi);
-  chain.SetBranchAddress("els_reliso", &els_reliso);
+  chain.SetBranchAddress("lep_pt", &lep_pt);
+  chain.SetBranchAddress("lep_eta", &lep_eta);
+  chain.SetBranchAddress("lep_phi", &lep_phi);
+  chain.SetBranchAddress("lep_reliso", &lep_reliso);
+  chain.SetBranchAddress("lep_tru_dr", &lep_tru_dr);
   isReadOnly = true;
 }
 

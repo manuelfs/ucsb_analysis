@@ -58,8 +58,9 @@ public:
   float GetMuonIsolation(uint imu);
   bool passedBaseElectronSelection(uint iel);
   bool passedBaseMuonSelection(uint iel);
-  int GetTrueElectron(int imu, double &closest_dR);
-  int GetTrueMuon(int imu, double &closest_dR);
+  int GetTrueElectron(int index, int &momID, double &closest_dR);
+  int GetTrueMuon(int index, int &momID, double &closest_dR);
+  int GetTrueParticle(double RecEta, double RecPhi, double &closest_dR);
 
 };
 

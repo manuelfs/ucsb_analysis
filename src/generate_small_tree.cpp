@@ -16,8 +16,9 @@ int main(){
   variables.push_back("int nvmu");
   variables.push_back("vector<int> trigger");
   variables.push_back("vector<int> njets");  // Number of jets for different pT thresholds
-  variables.push_back("vector<int> mus_tru");
-  variables.push_back("vector<int> els_tru");
+  variables.push_back("vector<int> lep_id");
+  variables.push_back("vector<int> lep_tru_id");
+  variables.push_back("vector<int> lep_tru_momid");
   variables.push_back("float weight");
   variables.push_back("float wpu");
   variables.push_back("float wlumi");
@@ -29,14 +30,11 @@ int main(){
   variables.push_back("vector<double> jets_pt");
   variables.push_back("vector<double> jets_eta");
   variables.push_back("vector<double> jets_phi");
-  variables.push_back("vector<double> mus_pt");
-  variables.push_back("vector<double> mus_eta");
-  variables.push_back("vector<double> mus_phi");
-  variables.push_back("vector<double> mus_reliso");
-  variables.push_back("vector<double> els_pt");
-  variables.push_back("vector<double> els_eta");
-  variables.push_back("vector<double> els_phi");
-  variables.push_back("vector<double> els_reliso");
+  variables.push_back("vector<double> lep_pt");
+  variables.push_back("vector<double> lep_eta");
+  variables.push_back("vector<double> lep_phi");
+  variables.push_back("vector<double> lep_reliso");
+  variables.push_back("vector<double> lep_tru_dr");
 
   std::ofstream cppFile("src/small_tree.cpp"), hppFile("inc/small_tree.hpp");
   
