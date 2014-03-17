@@ -16,6 +16,9 @@ int main(){
   variables.push_back("int nvmu");
   variables.push_back("vector<int> trigger");
   variables.push_back("vector<int> njets");  // Number of jets for different pT thresholds
+  variables.push_back("vector<int> nbt");    // Number of tight b-tags for different pT thresholds
+  variables.push_back("vector<int> nbm");    // Number of medium b-tags for different pT thresholds
+  variables.push_back("vector<int> nbl");    // Number of loose b-tags for different pT thresholds
   variables.push_back("vector<int> lep_id");
   variables.push_back("vector<int> lep_tru_id");
   variables.push_back("vector<int> lep_tru_momid");
@@ -23,13 +26,17 @@ int main(){
   variables.push_back("float wpu");
   variables.push_back("float wlumi");
   variables.push_back("float ht");
+  variables.push_back("float mt");
   variables.push_back("float met");
+  variables.push_back("float met_phi");
+  variables.push_back("float metlep_dphi");
   variables.push_back("float metsig");
   variables.push_back("float onmet");
   variables.push_back("float ntrupv");  // Thinking about casting it into an int
   variables.push_back("vector<double> jets_pt");
   variables.push_back("vector<double> jets_eta");
   variables.push_back("vector<double> jets_phi");
+  variables.push_back("vector<double> jets_csv");
   variables.push_back("vector<double> lep_pt");
   variables.push_back("vector<double> lep_eta");
   variables.push_back("vector<double> lep_phi");

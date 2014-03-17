@@ -24,6 +24,9 @@ public:
   int nvmu;
   vector<int> trigger;
   vector<int> njets;
+  vector<int> nbt;
+  vector<int> nbm;
+  vector<int> nbl;
   vector<int> lep_id;
   vector<int> lep_tru_id;
   vector<int> lep_tru_momid;
@@ -31,13 +34,17 @@ public:
   float wpu;
   float wlumi;
   float ht;
+  float mt;
   float met;
+  float met_phi;
+  float metlep_dphi;
   float metsig;
   float onmet;
   float ntrupv;
   vector<double> jets_pt;
   vector<double> jets_eta;
   vector<double> jets_phi;
+  vector<double> jets_csv;
   vector<double> lep_pt;
   vector<double> lep_eta;
   vector<double> lep_phi;

@@ -20,6 +20,7 @@
 #include "TTree.h"
 
 using namespace std;
+const double CSVCuts[] = {0.244, 0.679, 0.898};
 const std::vector<std::vector<int> > VRunLumiPrompt(MakeVRunLumi("Golden"));
 const std::vector<std::vector<int> > VRunLumi24Aug(MakeVRunLumi("24Aug"));
 const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
@@ -76,6 +77,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
   Float_t pt_thresh[] = {30, 40, 50, 60, 70, 80};
   int nthresh = 6;
   tree.njets.resize(nthresh);
+  tree.nbl.resize(nthresh);tree.nbm.resize(nthresh);tree.nbt.resize(nthresh);
   double deltaR;
   int mcID, mcmomID, lepID;
 
@@ -123,15 +125,28 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     tree.jets_pt.resize(0);
     tree.jets_eta.resize(0);
     tree.jets_phi.resize(0);
-    for(int ith(0); ith < nthresh; ith++) 
+    tree.jets_csv.resize(0);
+    for(int ith(0); ith < nthresh; ith++) {
       tree.njets[ith] = 0;
+      tree.nbl[ith] = 0;
+      tree.nbm[ith] = 0;
+      tree.nbt[ith] = 0;
+    }
     for(uint ijet = 0; ijet<jets_AK5PFclean_pt->size(); ijet++) {
       if(!isGoodJet(ijet, 30)) continue;
       tree.jets_pt.push_back(jets_AK5PFclean_pt->at(ijet));
       tree.jets_eta.push_back(jets_AK5PFclean_eta->at(ijet));
       tree.jets_phi.push_back(jets_AK5PFclean_phi->at(ijet));
-      for(int ith(0); ith < nthresh; ith++) 
-	if(jets_AK5PFclean_pt->at(ijet) >= pt_thresh[ith]) tree.njets[ith]++;
+      double csv = jets_AK5PFclean_btag_secVertexCombined->at(ijet);
+      tree.jets_csv.push_back(csv);
+      for(int ith(0); ith < nthresh; ith++) {
+	if(jets_AK5PFclean_pt->at(ijet) >= pt_thresh[ith]) {
+	  tree.njets[ith]++;
+	  if(csv >= CSVCuts[0]) tree.nbl[ith]++;
+	  if(csv >= CSVCuts[1]) tree.nbm[ith]++;
+	  if(csv >= CSVCuts[2]) tree.nbt[ith]++;
+	}
+      }
     }
 
 
@@ -212,6 +227,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 
     ////////////////   METS   ////////////////
     tree.met = pfTypeImets_et->at(0);
+    tree.met_phi = pfTypeImets_phi->at(0);
     tree.metsig = pfmets_fullSignif;
     // Setting up online MET
     int index_onmet(-1);
@@ -227,6 +243,16 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     }
     if(index_onmet >= 0) tree.onmet = standalone_triggerobject_et->at(index_onmet);
     else tree.onmet = -999;
+    // Finding mT and deltaPhi with respect to highest pT lepton
+    tree.mt = -999.; tree.metlep_dphi = -999.;
+    double max_pT = -1;
+    for(uint index=0; index<tree.lep_pt.size(); index++){
+      if(tree.lep_pt[index] > max_pT){
+	max_pT = tree.lep_pt[index];
+	tree.metlep_dphi = abs(tree.met_phi-tree.lep_phi[index]);
+	tree.mt = sqrt(2*max_pT* tree.met*(1-cos(tree.metlep_dphi)));
+      }
+    }
 
 
     ////////////////   Pile-up   ////////////////
