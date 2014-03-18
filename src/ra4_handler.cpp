@@ -53,6 +53,8 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
   int TriggerIndex[NTrigReduced], AllTriggers(0);
   GetEntry(0);
   model = model_params->c_str();
+//   cout<<model<<endl;
+
   for(int ieff(0); ieff < NTrigReduced; ieff++){
     TriggerIndex[ieff] = -1; 
     triggername.push_back(TriggerName[ieff]);
@@ -72,7 +74,8 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     return;
   }
 
-  const float luminosity = 19600, xsec_t1tttt_8tev(0.00695169), xsec_t1tttt_13tev(0.121755);
+  const float luminosity = 19600, xsec_t1tttt_8tev_1145(0.00695169), xsec_t1tttt_13tev_1145(0.121755);
+  const float xsec_t1tttt_8tev_1400(0.0008712), xsec_t1tttt_13tev_1500(0.01461);
   const float xsec_tt_8tev(245.8), xsec_tt_13tev(818.8);
   Float_t pt_thresh[] = {30, 40, 50, 60, 70, 80};
   int nthresh = 6;
@@ -119,7 +122,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 	AllTriggers += tree.trigger[ieff];
       } else tree.trigger[ieff] = -1;
     }
-    if(AllTriggers == 0) continue; // No desired triggers passed
+//     if(AllTriggers == 0) continue; // No desired triggers passed
 
     ////////////////   Jets   ////////////////
     tree.jets_pt.resize(0);
@@ -272,9 +275,13 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 	  tree.wpu = wpu[bin];
 	  break;
 	}
-      tree.wlumi = xsec_t1tttt_8tev*luminosity / static_cast<double>(Nentries);
+      if(model.Contains("1150_")) tree.wlumi = xsec_t1tttt_8tev_1145*luminosity / static_cast<double>(Nentries);
+      if(model.Contains("1400_")) tree.wlumi = xsec_t1tttt_8tev_1400*luminosity / static_cast<double>(Nentries);
     } 
-    if(energy == "14" && SampleName == "T1ttt") tree.wlumi = xsec_t1tttt_13tev*luminosity / static_cast<double>(Nentries);
+    if(energy == "14" && SampleName == "T1ttt") {
+      if(model.Contains("1145_")) tree.wlumi = xsec_t1tttt_13tev_1145*luminosity / static_cast<double>(Nentries);
+      if(model.Contains("1500_")) tree.wlumi = xsec_t1tttt_13tev_1500*luminosity / static_cast<double>(Nentries);
+    }
     if(energy == "8" && SampleName == "t#bar{t}") tree.wlumi = xsec_tt_8tev*luminosity / static_cast<double>(Nentries);
     if(energy == "13" && SampleName == "t#bar{t}") tree.wlumi = xsec_tt_13tev*luminosity / static_cast<double>(Nentries);
 

@@ -6,8 +6,8 @@
     CanvasW	    = 1000
     CanvasH	    = 600
     TextSize	    = 0.069     
-    TitleSize	    = 0.05    
-    LabelSize	    = 0.05     
+    TitleSize	    = 0.052    
+    LabelSize	    = 0.052     
     PadRightMargin  = 0.038
     PadTopMargin    = 0.035
     PadBottomMargin = 0.12
