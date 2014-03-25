@@ -24,6 +24,7 @@ const double CSVCuts[] = {0.244, 0.679, 0.898};
 const std::vector<std::vector<int> > VRunLumiPrompt(MakeVRunLumi("Golden"));
 const std::vector<std::vector<int> > VRunLumi24Aug(MakeVRunLumi("24Aug"));
 const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
+const double PI = 3.14159265;
 
 #define NTrigEfficiencies 14
 #define NTrigReduced 19
@@ -81,7 +82,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
   int nthresh = 6;
   tree.njets.resize(nthresh);
   tree.nbl.resize(nthresh);tree.nbm.resize(nthresh);tree.nbt.resize(nthresh);
-  double deltaR;
+  double deltaR, lepmax_pt, lepmax_px, lepmax_py;
   int mcID, mcmomID, lepID;
 
   vector<float> wpu_min, wpu_max, wpu;
@@ -154,6 +155,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 
 
     ////////////////   Leptons   ////////////////
+    lepmax_pt=0; lepmax_px=0; lepmax_py=0;
     tree.lep_pt.resize(0);
     tree.lep_eta.resize(0);
     tree.lep_phi.resize(0);
@@ -176,6 +178,12 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
       tree.lep_tru_id.push_back(mcID);
       tree.lep_tru_momid.push_back(mcmomID);
       tree.lep_tru_dr.push_back(deltaR);
+
+      if(els_pt->at(index) > lepmax_pt){
+	lepmax_pt=els_pt->at(index); 
+	lepmax_px=els_px->at(index); 
+	lepmax_py=els_py->at(index);
+      }
 //       cout<<"Rec el eta "<<tree.lep_eta[tree.lep_pt.size()-1]<<", phi "<<tree.lep_phi[tree.lep_pt.size()-1]
 //   	  <<", tru id "<<tree.lep_tru_id[tree.lep_pt.size()-1]<<", tru momid "<<tree.lep_tru_momid[tree.lep_pt.size()-1]
 // 	  <<", dR "<<deltaR<<endl;
@@ -195,6 +203,11 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
       tree.lep_tru_momid.push_back(mcmomID);
       tree.lep_tru_dr.push_back(deltaR);
 
+      if(mus_pt->at(index) > lepmax_pt){
+	lepmax_pt=mus_pt->at(index); 
+	lepmax_px=mus_px->at(index); 
+	lepmax_py=mus_py->at(index);
+      }
 //          cout<<"Rec mu pT "<<tree.lep_pt[tree.lep_pt.size()-1]<<", eta "<<tree.lep_eta[tree.lep_pt.size()-1]
 //  	  <<", phi "<<tree.lep_phi[tree.lep_pt.size()-1]
 //    	  <<", tru id "<<tree.lep_tru_id[tree.lep_pt.size()-1]<<", tru momid "<<tree.lep_tru_momid[tree.lep_pt.size()-1]
@@ -247,14 +260,14 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     if(index_onmet >= 0) tree.onmet = standalone_triggerobject_et->at(index_onmet);
     else tree.onmet = -999;
     // Finding mT and deltaPhi with respect to highest pT lepton
-    tree.mt = -999.; tree.metlep_dphi = -999.;
-    double max_pT = -1;
-    for(uint index=0; index<tree.lep_pt.size(); index++){
-      if(tree.lep_pt[index] > max_pT){
-	max_pT = tree.lep_pt[index];
-	tree.metlep_dphi = abs(tree.met_phi-tree.lep_phi[index]);
-	tree.mt = sqrt(2*max_pT* tree.met*(1-cos(tree.metlep_dphi)));
-      }
+    tree.mt = -999.; tree.wlep_dphi = -999.;
+    if(lepmax_pt > 0){
+      double lepmax_phi = atan2(lepmax_py, lepmax_px);
+      double Wx = pfTypeImets_ex->at(0) + lepmax_px;
+      double Wy = pfTypeImets_ey->at(0) + lepmax_py;
+      tree.wlep_dphi = abs(atan2(Wy,Wx)-lepmax_phi);
+      if(tree.wlep_dphi > PI) tree.wlep_dphi = 2*PI-tree.wlep_dphi;
+      tree.mt = sqrt(2*lepmax_pt* tree.met*(1-cos(tree.met_phi-lepmax_phi)));
     }
 
 
