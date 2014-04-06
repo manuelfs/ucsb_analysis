@@ -32,6 +32,10 @@ small_tree::small_tree():
   tree.Branch("wlep_dphi", &wlep_dphi);
   tree.Branch("metsig", &metsig);
   tree.Branch("onmet", &onmet);
+  tree.Branch("dr_bb", &dr_bb);
+  tree.Branch("spher", &spher);
+  tree.Branch("spher_jets", &spher_jets);
+  tree.Branch("spher_nolin", &spher_nolin);
   tree.Branch("ntrupv", &ntrupv);
   tree.Branch("jets_pt", &jets_pt);
   tree.Branch("jets_eta", &jets_eta);
@@ -70,6 +74,10 @@ small_tree::small_tree(TString filename):
   chain.SetBranchAddress("wlep_dphi", &wlep_dphi);
   chain.SetBranchAddress("metsig", &metsig);
   chain.SetBranchAddress("onmet", &onmet);
+  chain.SetBranchAddress("dr_bb", &dr_bb);
+  chain.SetBranchAddress("spher", &spher);
+  chain.SetBranchAddress("spher_jets", &spher_jets);
+  chain.SetBranchAddress("spher_nolin", &spher_nolin);
   chain.SetBranchAddress("ntrupv", &ntrupv);
   chain.SetBranchAddress("jets_pt", &jets_pt);
   chain.SetBranchAddress("jets_eta", &jets_eta);

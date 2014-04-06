@@ -1,9 +1,30 @@
+//----------------------------------------------------------------------------
+// ucsb_utils - Various functions used accross the code
+//----------------------------------------------------------------------------
+
+#ifndef INT_ROOT
+   #include "ucsb_utils.hpp"
+#endif
+
 #include <iostream>
 #include "TMath.h"
 #include "TString.h"
 #include "TH1F.h"
 
 using namespace std;
+
+bool eigen2x2(float matrix[2][2], float &eig1, float &eig2){
+  float root = pow(matrix[0][0],2) + pow(matrix[1][1],2)-2*matrix[0][0]*matrix[1][1]+4*matrix[0][1]*matrix[1][0];
+  if(root<0) return false;
+  
+  eig1 = (matrix[0][0]+matrix[1][1]+sqrt(root))/2.;
+  eig2 = (matrix[0][0]+matrix[1][1]-sqrt(root))/2.;
+  return true;
+}
+
+bool comp_pair(const int_double& left, const int_double& right){ 
+  return left.second > right.second; 
+}  
 
 void DivideHistosEff(TH1F* hNum, TH1F* hDen, TH1F* hEff){
   float num, den, eff;
@@ -31,10 +52,10 @@ double deltaphi(double phi1, double phi2){
 }
 
 float dR(float eta1, float eta2, float phi1, float phi2) {
-  return sqrt(pow(eta1-eta2, 2) + pow(fabs(deltaphi(phi1,phi2)), 2)) ;
+  return sqrt(pow(eta1-eta2, 2) + pow(deltaphi(phi1,phi2), 2)) ;
 }
 
-TString RoundNumber(double num, int decimals, double denom=1){
+TString RoundNumber(double num, int decimals, double denom){
   if(denom==0) return " - ";
   double neg = 1; if(num*denom<0) neg = -1;
   num /= neg*denom; num += 0.5*pow(10.,-decimals);

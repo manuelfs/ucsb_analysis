@@ -23,7 +23,7 @@ fi
 # Powheg ttbar @13TeV: 993,322 entries
  ./run/make_tree.exe -i TTbar_TuneZ2star_13TeV-powheg-tauola_Summer13dr53X-PU25bx25_START53_V19D-v1_AODSIM_UCSB2027_v71 -n $Nevents  | tee log/maketree_13TeV_ttbar_25PU.log 
 # Powheg ttbar @8TeV: 21,675,970 entries
- #./run/make_tree.exe -i TT_CT10_TuneZ2star_8TeV-powheg-tauola_Summer12_DR53X-PU_S10_START53_V7A-v2_AODSIM_UCSB1881_v71 -n $Nevents | tee log/maketree_8TeV_ttbar.log
+ ./run/make_tree.exe -i TT_CT10_TuneZ2star_8TeV-powheg-tauola_Summer12_DR53X-PU_S10_START53_V7A-v2_AODSIM_UCSB1881_v71 -n $Nevents | tee log/maketree_8TeV_ttbar.log
 # Powheg ttbar @8TeV: 1,144,808 entries
 # ./run/make_tree.exe -i TT_CT10_TuneZ2star_8TeV-powheg-tauola_Summer12_DR53X-PU_S10_START53_V7A-v2_AODSIM_UCSB1881_v71 -n $Nevents -m _f9 | tee log/maketree_8TeV_ttbar.log
 

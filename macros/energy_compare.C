@@ -3,6 +3,7 @@
 #define INT_ROOT
 #include "inc/styles.hpp"
 #include "src/styles.cpp"
+#include "inc/ucsb_utils.hpp"
 #include "src/ucsb_utils.cpp"
 
 #include <fstream>
@@ -30,7 +31,7 @@ using namespace std;
 using std::cout;
 using std::endl;
 
-void energy_compare(){
+void energy_compare(TString filetype = ".eps"){
   styles style("Standard"); style.setDefaultStyle();
   gStyle->SetHatchesLineWidth(2);
  
@@ -78,7 +79,8 @@ void energy_compare(){
   TH1F *hFile[NVar][2][NHis];
   int colors[2][NHis] = {{kRed-7, kRed+1, kGreen+1, kMagenta+1}, {kBlue-7, kBlue+1, kGreen+2, kMagenta+2}};
   int fillStyles[2][NHis] = {{3345, 0, 0, 0}, {3354, 0, 0, 0}};
-  TString xTitle = "", yTitle = "", Title = "", Pname, Hname, totCut, energies[] = {"_8_TeV", "_13_TeV"};;
+  TString xTitle = "", yTitle = "", Title = "", Pname, Hname, totCut, energies[] = {"_8_TeV", "_13_TeV"};
+  TString logtag = "_log"; logtag += filetype;
   float maxHisto(-1), entries[2][NHis], means[2][NHis];
   double legX = 0.6, legY = 0.71;
   double legW = 0.12, legH = 0.22;
@@ -89,12 +91,12 @@ void energy_compare(){
   TArrow arrow; arrow.SetLineWidth(2); arrow.SetArrowSize(.02);
 
   for(int var(0); var < NVar; var++){
-    if(!VarName[var].Contains("dphi")) continue;
+    if(!VarName[var].Contains("dphi") && !VarName[var].Contains("mt")) continue;
 
     totCut = "weight*("; totCut += Cuts[var]; totCut += ")";
 
     int digits = 0;
-    double xcut = -99.;
+    double xcut = -999.;
     xTitle = "";
     if(VarName[var]=="met") {xTitle = "E_{T,miss}"; xcut = 250;}
     if(VarName[var]=="ht") {xTitle = "H_{T}";  xcut = 500;}
@@ -153,7 +155,7 @@ void energy_compare(){
 	} else hFile[var][ene][his]->Draw("same");
       }
       leg.Draw();
-      Pname = "plots/nolog/yields_"; Pname += VarName[var]; Pname += tags[var]; Pname += energies[ene]; Pname += ".eps";
+      Pname = "plots/nolog/yields_"; Pname += VarName[var]; Pname += tags[var]; Pname += energies[ene]; Pname += filetype;
       Pname.ReplaceAll("[","_"); Pname.ReplaceAll("]","");  Pname.ReplaceAll("+","-"); 
       can.SetLogy(0);    
       hFile[var][ene][0]->SetMaximum(maxHisto*1.2);
@@ -170,7 +172,7 @@ void energy_compare(){
 	line.DrawLine(2,0,2,maxHisto);
 	arrow.DrawArrow(2,maxHisto,2-0.04*(Range[var][1]-Range[var][0]),maxHisto);
       }
-      Pname.ReplaceAll(".eps", "_log.eps"); Pname.ReplaceAll("nolog/", "");
+      Pname.ReplaceAll(filetype, logtag); Pname.ReplaceAll("nolog/", "");
       can.SaveAs(Pname);
     } // Loop over energies
 
@@ -201,7 +203,7 @@ void energy_compare(){
       line.DrawLine(2,0,2,maxHisto);
       arrow.DrawArrow(2,maxHisto,2-0.04*(Range[var][1]-Range[var][0]),maxHisto);
     }
-    Pname = "plots/nolog/shapes_"; Pname += VarName[var];  Pname += tags[var]; Pname += ".eps";
+    Pname = "plots/nolog/shapes_"; Pname += VarName[var];  Pname += tags[var]; Pname += filetype;
     Pname.ReplaceAll("[","_"); Pname.ReplaceAll("]",""); Pname.ReplaceAll("+","-"); 
     can.SetLogy(0);    
     hFile[var][0][0]->SetMaximum(maxHisto*1.2);
@@ -211,14 +213,14 @@ void energy_compare(){
     hFile[var][0][0]->SetMinimum(0.1);
     hFile[var][0][0]->SetMaximum(maxHisto*4);
     if(VarName[var]=="ht") hFile[var][0][0]->SetMaximum(maxHisto*15);
-    Pname.ReplaceAll(".eps", "_log.eps"); Pname.ReplaceAll("nolog/", "");
+    Pname.ReplaceAll(filetype, logtag); Pname.ReplaceAll("nolog/", "");
     can.SaveAs(Pname);
 
   } // Loop over all variables
   for(int var(0); var < NVar; var++){
     for(int ene(0); ene < 2; ene++){
       for(int his(0); his < NHis; his++){
-	hFile[var][ene][his]->Delete();
+	if(hFile[var][ene][his]) hFile[var][ene][his]->Delete();
       }
     } // Loop over energies
   }

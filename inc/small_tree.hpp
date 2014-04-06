@@ -40,6 +40,10 @@ public:
   float wlep_dphi;
   float metsig;
   float onmet;
+  float dr_bb;
+  float spher;
+  float spher_jets;
+  float spher_nolin;
   float ntrupv;
   vector<double> jets_pt;
   vector<double> jets_eta;

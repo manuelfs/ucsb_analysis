@@ -84,8 +84,11 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
   tree.nbl.resize(nthresh);tree.nbm.resize(nthresh);tree.nbt.resize(nthresh);
   double deltaR, lepmax_pt, lepmax_px, lepmax_py;
   int mcID, mcmomID, lepID;
+  float spher[2][2], spher_jets[2][2], spher_nolin[2][2];
+  float pt(-99.), px(-99.), py(-99.), eig1(-99.), eig2(-99.);
 
   vector<float> wpu_min, wpu_max, wpu;
+  vector<int_double> csv_sorted;
   ifstream wpu_file("txt/weights_sms_pu.txt");
   if(sampleName.find("8TeV_T1tttt")!=std::string::npos){
     for(int iword(0); iword<3; iword++) wpu_file>>word;
@@ -130,6 +133,10 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     tree.jets_eta.resize(0);
     tree.jets_phi.resize(0);
     tree.jets_csv.resize(0);
+    csv_sorted.resize(0);
+    spher[0][0] = 0; spher[0][1] = 0; spher[1][0] = 0; spher[1][1] = 0; 
+    spher_nolin[0][0] = 0; spher_nolin[0][1] = 0; spher_nolin[1][0] = 0; spher_nolin[1][1] = 0; 
+    spher_jets[0][0] = 0; spher_jets[0][1] = 0; spher_jets[1][0] = 0; spher_jets[1][1] = 0; 
     for(int ith(0); ith < nthresh; ith++) {
       tree.njets[ith] = 0;
       tree.nbl[ith] = 0;
@@ -138,11 +145,26 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     }
     for(uint ijet = 0; ijet<jets_AK5PFclean_pt->size(); ijet++) {
       if(!isGoodJet(ijet, 30)) continue;
-      tree.jets_pt.push_back(jets_AK5PFclean_pt->at(ijet));
+      pt = jets_AK5PFclean_pt->at(ijet);
+      px = jets_AK5PFclean_px->at(ijet);
+      py = jets_AK5PFclean_py->at(ijet);
+      tree.jets_pt.push_back(pt);
       tree.jets_eta.push_back(jets_AK5PFclean_eta->at(ijet));
       tree.jets_phi.push_back(jets_AK5PFclean_phi->at(ijet));
       double csv = jets_AK5PFclean_btag_secVertexCombined->at(ijet);
       tree.jets_csv.push_back(csv);
+      csv_sorted.push_back(make_pair(tree.jets_csv.size()-1, csv));
+      // Transverse sphericity matrix (not including 1/sum(pt), which cancels in the ratio of eig)
+      spher_nolin[0][0] += px*px; spher_nolin[0][1] += px*py; 
+      spher_nolin[1][0] += px*py; spher_nolin[1][1] += py*py; 
+      // Linearized transverse sphericity matrix
+      spher[0][0] += px*px/pt; spher[0][1] += px*py/pt; 
+      spher[1][0] += px*py/pt; spher[1][1] += py*py/pt; 
+      // Linearized transverse sphericity matrix with only jets
+      spher_jets[0][0] += px*px/pt; spher_jets[0][1] += px*py/pt; 
+      spher_jets[1][0] += px*py/pt; spher_jets[1][1] += py*py/pt; 
+
+//       cout<<ijet<<": csv "<<csv<<", eta "<<jets_AK5PFclean_eta->at(ijet)<<", phi "<<jets_AK5PFclean_phi->at(ijet)<<endl;
       for(int ith(0); ith < nthresh; ith++) {
 	if(jets_AK5PFclean_pt->at(ijet) >= pt_thresh[ith]) {
 	  tree.njets[ith]++;
@@ -150,10 +172,25 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 	  if(csv >= CSVCuts[1]) tree.nbm[ith]++;
 	  if(csv >= CSVCuts[2]) tree.nbt[ith]++;
 	}
-      }
-    }
 
+      } // Loop over pT thresholds
+    } // Loop over all jets
 
+    if(eigen2x2(spher_jets, eig1, eig2)) tree.spher_jets = 2*eig2/(eig1+eig2);
+    else tree.spher_jets = -999.;
+    
+    if(tree.jets_csv.size() >= 2){
+      sort(csv_sorted.begin(), csv_sorted.end(), comp_pair);
+      tree.dr_bb = dR(tree.jets_eta[csv_sorted[0].first], tree.jets_eta[csv_sorted[1].first], 
+		      tree.jets_phi[csv_sorted[0].first], tree.jets_phi[csv_sorted[1].first]);
+//       cout<<"Calculated dr_bb = "<<tree.dr_bb<<endl;
+//       cout<<csv_sorted[0].first<<": csv "<<csv_sorted[0].second<<", eta "<<tree.jets_eta[csv_sorted[0].first]
+// 	  <<", phi "<<tree.jets_phi[csv_sorted[0].first]<<endl;
+//       cout<<csv_sorted[1].first<<": csv "<<csv_sorted[1].second<<", eta "<<tree.jets_eta[csv_sorted[1].first]
+// 	  <<", phi "<<tree.jets_phi[csv_sorted[1].first]<<endl<<endl;
+    } else tree.dr_bb = -999.;
+    
+    
     ////////////////   Leptons   ////////////////
     lepmax_pt=0; lepmax_px=0; lepmax_py=0;
     tree.lep_pt.resize(0);
@@ -167,10 +204,13 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     for(uint index=0; index<els_pt->size(); index++){
       if(!passedBaseElectronSelection(index)) continue;
 
+      pt = els_pt->at(index);
+      px = els_px->at(index);
+      py = els_py->at(index);
       if(els_charge->at(index)>0) lepID = pdtlund::e_minus;
       else lepID = pdtlund::e_plus;
       mcID = GetTrueElectron((int)index, mcmomID, deltaR);
-      tree.lep_pt.push_back(els_pt->at(index));
+      tree.lep_pt.push_back(pt);
       tree.lep_eta.push_back(els_eta->at(index));
       tree.lep_phi.push_back(els_phi->at(index));
       tree.lep_reliso.push_back(GetElectronIsolation(index));
@@ -184,6 +224,12 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 	lepmax_px=els_px->at(index); 
 	lepmax_py=els_py->at(index);
       }
+      // Transverse sphericity matrix (not including 1/sum(pt), which cancels in the ratio of eig)
+      spher_nolin[0][0] += px*px; spher_nolin[0][1] += px*py; 
+      spher_nolin[1][0] += px*py; spher_nolin[1][1] += py*py; 
+      // Linearized transverse sphericity matrix
+      spher[0][0] += px*px/pt; spher[0][1] += px*py/pt; 
+      spher[1][0] += px*py/pt; spher[1][1] += py*py/pt; 
 //       cout<<"Rec el eta "<<tree.lep_eta[tree.lep_pt.size()-1]<<", phi "<<tree.lep_phi[tree.lep_pt.size()-1]
 //   	  <<", tru id "<<tree.lep_tru_id[tree.lep_pt.size()-1]<<", tru momid "<<tree.lep_tru_momid[tree.lep_pt.size()-1]
 // 	  <<", dR "<<deltaR<<endl;
@@ -208,6 +254,12 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 	lepmax_px=mus_px->at(index); 
 	lepmax_py=mus_py->at(index);
       }
+      // Transverse sphericity matrix (not including 1/sum(pt), which cancels in the ratio of eig)
+      spher_nolin[0][0] += px*px; spher_nolin[0][1] += px*py; 
+      spher_nolin[1][0] += px*py; spher_nolin[1][1] += py*py; 
+      // Linearized transverse sphericity matrix
+      spher[0][0] += px*px/pt; spher[0][1] += px*py/pt; 
+      spher[1][0] += px*py/pt; spher[1][1] += py*py/pt; 
 //          cout<<"Rec mu pT "<<tree.lep_pt[tree.lep_pt.size()-1]<<", eta "<<tree.lep_eta[tree.lep_pt.size()-1]
 //  	  <<", phi "<<tree.lep_phi[tree.lep_pt.size()-1]
 //    	  <<", tru id "<<tree.lep_tru_id[tree.lep_pt.size()-1]<<", tru momid "<<tree.lep_tru_momid[tree.lep_pt.size()-1]
@@ -240,6 +292,12 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 //           }
 //           cout<<endl;
 //        }
+
+    if(eigen2x2(spher, eig1, eig2)) tree.spher = 2*eig2/(eig1+eig2);
+    else tree.spher = -999.;
+    if(eigen2x2(spher_nolin, eig1, eig2)) tree.spher_nolin = 2*eig2/(eig1+eig2);
+    else tree.spher_nolin = -999.;
+
 
     ////////////////   METS   ////////////////
     tree.met = pfTypeImets_et->at(0);

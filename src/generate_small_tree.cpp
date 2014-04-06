@@ -32,6 +32,10 @@ int main(){
   variables.push_back("float wlep_dphi");
   variables.push_back("float metsig");
   variables.push_back("float onmet");
+  variables.push_back("float dr_bb");
+  variables.push_back("float spher");
+  variables.push_back("float spher_jets");
+  variables.push_back("float spher_nolin");
   variables.push_back("float ntrupv");  // Thinking about casting it into an int
   variables.push_back("vector<double> jets_pt");
   variables.push_back("vector<double> jets_eta");
