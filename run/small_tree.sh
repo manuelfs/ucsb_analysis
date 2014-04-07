@@ -1,6 +1,6 @@
 #! /bin/bash
 
-export Nevents=1
+export Nevents=5000000
 if (( "$#" >= 1 )); then
     export Nevents=$1
 fi

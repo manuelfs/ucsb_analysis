@@ -46,8 +46,8 @@ void lep_isolation(TString filetype = ".eps"){
 				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1145_500.root",
 				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1500_1_.root",
 				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1500_500.root"}};
-  TString legNames[2][NHis] = {{"t#bar{t} [n=", "T1tttt(1150,525) [n=","T1tttt(1400,25) [n=","T1tttt(1400,525) [n="},
-			       {"t#bar{t} [n=", "T1tttt(1150,500) [n=","T1tttt(1500,1) [n=","T1tttt(1500,500) [n="}}, legCaption;
+  TString legNames[2][NHis] = {{"t#bar{t} [av=", "Signal @  8 TeV [cut at ","T1tttt(1400,25) [n=","T1tttt(1400,525) [n="},
+			       {"t#bar{t} [av=", "Signal @ 13 TeV [cut at ","T1tttt(1500,1) [n=","T1tttt(1500,500) [n="}}, legCaption;
   TChain *chain[2][NHis];
   for(int ene(0); ene < 2; ene++){
     for(int his(0); his < NHis; his++){
@@ -61,21 +61,22 @@ void lep_isolation(TString filetype = ".eps"){
   TString Cuts[] = {"abs(lep_tru_momid)!=15&&abs(lep_tru_momid)<26", "abs(lep_tru_momid)==15", 
 		    "abs(lep_tru_momid)>=26"};
   float Range[][2] = {{0,1}, {0,1}, {0,1}};
-  int nBins[] = {80, 80, 80};
-  TString tags[] = {"emu", "tau", "nolep"};
+  int nBins[] = {100, 100, 100};
+  TString tags[] = {"W", "tau", "other"};
   // Histograms and canvas
   TCanvas can;
   TH1F *hFile[NVar][2][NHis];
   int colors[2][NHis] = {{kRed-7, kRed+1, kGreen+1, kMagenta+1}, {kBlue-7, kBlue+1, kGreen+2, kMagenta+2}};
   //int fillStyles[2][NHis] = {{3345, 0, 0, 0}, {3354, 0, 0, 0}};
-  TString xTitle = "", yTitle = "", Title = "", Pname, Hname, totCut, energies[] = {"_8_TeV", "_13_TeV"};
+  TString xTitle = "", yTitle = "", Title = "", Pname, Hname, totCut;
   TString logtag = "_log"; logtag += filetype;
   float maxHisto(-1), fmax(1.2), fmax_log(4), entries[2][NHis], means[2][NHis];
   TLine line; line.SetLineColor(2); line.SetLineWidth(2); line.SetLineStyle(2);
   TArrow arrow; arrow.SetLineWidth(2); arrow.SetArrowSize(.02);
+  const int doHis = 1;
 
   // Legend
-  const double legX = 0.7, legY = 0.93;
+  const double legX = 0.26, legY = 0.93;
   const double legW = 0.12, legH = 0.12;
   TLegend leg(legX, legY-legH, legX+legW, legY);
   leg.SetTextSize(0.056); leg.SetFillColor(0); leg.SetFillStyle(0); leg.SetBorderSize(0);
@@ -86,7 +87,7 @@ void lep_isolation(TString filetype = ".eps"){
 
     int digits = 2;
     double xcut = 0.12;
-    xTitle = "Relative isolation";
+    xTitle = "Lepton relative isolation";
     yTitle = "Entries/(";
     yTitle+= RoundNumber((Range[var][1]-Range[var][0]), digits, (double)nBins[var]);
     yTitle+=")";
@@ -94,7 +95,7 @@ void lep_isolation(TString filetype = ".eps"){
     
     for(int ene(0); ene < 2; ene++){
       Title = "Shape comparison"; 
-      for(int his(0); his < NHis; his++){
+      for(int his(doHis); his < doHis+1; his++){
 	Hname = "histo"; Hname += var; Hname += ene; Hname += his;
 	hFile[var][ene][his] = new TH1F(Hname, "", nBins[var], Range[var][0], Range[var][1]);
 	hFile[var][ene][his]->SetLineColor(colors[ene][his]);
@@ -115,24 +116,28 @@ void lep_isolation(TString filetype = ".eps"){
     } // Loop over energies
 
     maxHisto = -1;
-    for(int ene(0); ene < 2; ene++){
-      for(int his(0); his < 2; his++){
+    for(int his(doHis); his < doHis+1; his++){
+      for(int ene(0); ene < 2; ene++){
 	hFile[var][ene][his]->Scale(1000./entries[ene][his]);
 	if(maxHisto < hFile[var][ene][his]->GetMaximum()) maxHisto = hFile[var][ene][his]->GetMaximum();
-      }
-    } // Loop over energies
-    for(int his(0); his < 1; his++){
-      for(int ene(0); ene < 2; ene++){
-	legCaption = legNames[ene][his]; legCaption += energies[ene];
-	legCaption.ReplaceAll("_"," "); legCaption.ReplaceAll(" [n="," @"); 
+
+	// Legend
+	int bincut = hFile[var][ene][his]->FindBin(xcut);
+	legCaption = legNames[ene][his]; legCaption += RoundNumber(xcut,2); legCaption += " keeps ";
+	legCaption += RoundNumber(hFile[var][ene][his]->Integral(1,bincut-1)*100, 1,
+				  hFile[var][ene][his]->Integral(1,nBins[var]));
+	legCaption += "% of leptons"; 
+	legCaption += "]";
 	leg.AddEntry(hFile[var][ene][his], legCaption);
-	if(ene==0 && his==0) {
-	  hFile[var][ene][his]->SetTitle("Shape comparison");
+	if(ene==0 && his==1) {
+	  Title = "Shape comparison: leptons from "; Title += tags[var];
+	  hFile[var][ene][his]->SetTitle(Title);
 	  hFile[var][ene][his]->Draw();
 	} else hFile[var][ene][his]->Draw("same");
       }
     } // Loop over energies
     leg.Draw();
+
     arrow.SetLineColor(colors[0][1]); 
     line.SetLineColor(colors[0][1]); 
     line.DrawLine(xcut,0,xcut,maxHisto*fmax);
@@ -140,18 +145,18 @@ void lep_isolation(TString filetype = ".eps"){
     Pname = "plots/lep_iso/shapes_"; Pname += VarName[var];  Pname += tags[var]; Pname += filetype;
     Pname.ReplaceAll("[","_"); Pname.ReplaceAll("]",""); Pname.ReplaceAll("+","-"); 
     can.SetLogy(0);    
-    hFile[var][0][0]->SetMaximum(maxHisto*fmax);
+    hFile[var][0][1]->SetMaximum(maxHisto*fmax);
     can.SaveAs(Pname);
     can.SetLogy(1);
-    hFile[var][0][0]->SetMinimum(0.1);
-    hFile[var][0][0]->SetMaximum(maxHisto*fmax_log);
+    hFile[var][0][1]->SetMinimum(0.1);
+    hFile[var][0][1]->SetMaximum(maxHisto*fmax_log);
     line.DrawLine(xcut,0,xcut,maxHisto*fmax_log);
     Pname.ReplaceAll(filetype, logtag); 
     can.SaveAs(Pname);
   }
   for(int var(0); var < NVar; var++){
     for(int ene(0); ene < 2; ene++){
-      for(int his(0); his < NHis; his++){
+      for(int his(doHis); his < doHis+1; his++){
 	if(hFile[var][ene][his]) hFile[var][ene][his]->Delete();
       }
     } // Loop over energies
