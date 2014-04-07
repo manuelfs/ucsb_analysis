@@ -23,13 +23,140 @@
 #include "TMath.h"
 #include "TLatex.h"
 
-#define NVar 17
+#define NVar 3
+//#define NVar 17
 #define NHis 4
 const double PI = 3.14159265;
 
 using namespace std;
 using std::cout;
 using std::endl;
+
+
+void lep_isolation(TString filetype = ".eps"){
+  styles style("Standard"); style.setDefaultStyle();
+  gStyle->SetHatchesLineWidth(2);
+ 
+  //Files
+  TString FileNames[2][NHis] = {{"archive/TT_CT10_TuneZ2star_8TeV-powheg-tauola_Summer12_DR53X-PU_S10_START53_V7A-v2_AODSIM_UCSB1881_v71_.root",
+				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68_1150_525.root",
+				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-25to500_50GeVX50GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1732reshuf_v68_1400_25.root",
+				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68_1400_525.root"},
+				{"archive/TTbar_TuneZ2star_13TeV-powheg-tauola_Summer13dr53X-PU25bx25_START53_V19D-v1_AODSIM_UCSB2027_v71_.root",
+				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1145_500.root",
+				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1500_1_.root",
+				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1500_500.root"}};
+  TString legNames[2][NHis] = {{"t#bar{t} [n=", "T1tttt(1150,525) [n=","T1tttt(1400,25) [n=","T1tttt(1400,525) [n="},
+			       {"t#bar{t} [n=", "T1tttt(1150,500) [n=","T1tttt(1500,1) [n=","T1tttt(1500,500) [n="}}, legCaption;
+  TChain *chain[2][NHis];
+  for(int ene(0); ene < 2; ene++){
+    for(int his(0); his < NHis; his++){
+      chain[ene][his] = new TChain("tree");
+      chain[ene][his]->Add(FileNames[ene][his]);
+    }
+  }
+  
+  // Variables and cuts
+  TString VarName[] = {"lep_reliso", "lep_reliso", "lep_reliso"};
+  TString Cuts[] = {"abs(lep_tru_momid)!=15&&abs(lep_tru_momid)<26", "abs(lep_tru_momid)==15", 
+		    "abs(lep_tru_momid)>=26"};
+  float Range[][2] = {{0,1}, {0,1}, {0,1}};
+  int nBins[] = {80, 80, 80};
+  TString tags[] = {"emu", "tau", "nolep"};
+  // Histograms and canvas
+  TCanvas can;
+  TH1F *hFile[NVar][2][NHis];
+  int colors[2][NHis] = {{kRed-7, kRed+1, kGreen+1, kMagenta+1}, {kBlue-7, kBlue+1, kGreen+2, kMagenta+2}};
+  //int fillStyles[2][NHis] = {{3345, 0, 0, 0}, {3354, 0, 0, 0}};
+  TString xTitle = "", yTitle = "", Title = "", Pname, Hname, totCut, energies[] = {"_8_TeV", "_13_TeV"};
+  TString logtag = "_log"; logtag += filetype;
+  float maxHisto(-1), fmax(1.2), fmax_log(4), entries[2][NHis], means[2][NHis];
+  TLine line; line.SetLineColor(2); line.SetLineWidth(2); line.SetLineStyle(2);
+  TArrow arrow; arrow.SetLineWidth(2); arrow.SetArrowSize(.02);
+
+  // Legend
+  const double legX = 0.7, legY = 0.93;
+  const double legW = 0.12, legH = 0.12;
+  TLegend leg(legX, legY-legH, legX+legW, legY);
+  leg.SetTextSize(0.056); leg.SetFillColor(0); leg.SetFillStyle(0); leg.SetBorderSize(0);
+  leg.SetTextFont(132);
+
+  for(int var(0); var < NVar; var++){
+    totCut = "weight*("; totCut += Cuts[var]; totCut += ")";
+
+    int digits = 2;
+    double xcut = 0.12;
+    xTitle = "Relative isolation";
+    yTitle = "Entries/(";
+    yTitle+= RoundNumber((Range[var][1]-Range[var][0]), digits, (double)nBins[var]);
+    yTitle+=")";
+    leg.Clear(); 
+    
+    for(int ene(0); ene < 2; ene++){
+      Title = "Shape comparison"; 
+      for(int his(0); his < NHis; his++){
+	Hname = "histo"; Hname += var; Hname += ene; Hname += his;
+	hFile[var][ene][his] = new TH1F(Hname, "", nBins[var], Range[var][0], Range[var][1]);
+	hFile[var][ene][his]->SetLineColor(colors[ene][his]);
+	hFile[var][ene][his]->SetLineWidth(3);
+	//hFile[var][ene][his]->SetFillStyle(fillStyles[ene][his]);
+	//hFile[var][ene][his]->SetFillColor(colors[ene][his]);
+	hFile[var][ene][his]->SetXTitle(xTitle);
+	hFile[var][ene][his]->SetYTitle(yTitle);
+	hFile[var][ene][his]->SetTitle(Title);
+
+	chain[ene][his]->Project(Hname, VarName[var], totCut);
+	
+	means[ene][his] = hFile[var][ene][his]->GetMean();
+	double overflow = hFile[var][ene][his]->GetBinContent(nBins[var]+1);
+	hFile[var][ene][his]->SetBinContent(nBins[var], hFile[var][ene][his]->GetBinContent(nBins[var])+overflow);
+	entries[ene][his] = hFile[var][ene][his]->Integral();
+      }
+    } // Loop over energies
+
+    maxHisto = -1;
+    for(int ene(0); ene < 2; ene++){
+      for(int his(0); his < 2; his++){
+	hFile[var][ene][his]->Scale(1000./entries[ene][his]);
+	if(maxHisto < hFile[var][ene][his]->GetMaximum()) maxHisto = hFile[var][ene][his]->GetMaximum();
+      }
+    } // Loop over energies
+    for(int his(0); his < 1; his++){
+      for(int ene(0); ene < 2; ene++){
+	legCaption = legNames[ene][his]; legCaption += energies[ene];
+	legCaption.ReplaceAll("_"," "); legCaption.ReplaceAll(" [n="," @"); 
+	leg.AddEntry(hFile[var][ene][his], legCaption);
+	if(ene==0 && his==0) {
+	  hFile[var][ene][his]->SetTitle("Shape comparison");
+	  hFile[var][ene][his]->Draw();
+	} else hFile[var][ene][his]->Draw("same");
+      }
+    } // Loop over energies
+    leg.Draw();
+    arrow.SetLineColor(colors[0][1]); 
+    line.SetLineColor(colors[0][1]); 
+    line.DrawLine(xcut,0,xcut,maxHisto*fmax);
+    arrow.DrawArrow(xcut,maxHisto,xcut-0.04*(Range[var][1]-Range[var][0]),maxHisto);
+    Pname = "plots/lep_iso/shapes_"; Pname += VarName[var];  Pname += tags[var]; Pname += filetype;
+    Pname.ReplaceAll("[","_"); Pname.ReplaceAll("]",""); Pname.ReplaceAll("+","-"); 
+    can.SetLogy(0);    
+    hFile[var][0][0]->SetMaximum(maxHisto*fmax);
+    can.SaveAs(Pname);
+    can.SetLogy(1);
+    hFile[var][0][0]->SetMinimum(0.1);
+    hFile[var][0][0]->SetMaximum(maxHisto*fmax_log);
+    line.DrawLine(xcut,0,xcut,maxHisto*fmax_log);
+    Pname.ReplaceAll(filetype, logtag); 
+    can.SaveAs(Pname);
+  }
+  for(int var(0); var < NVar; var++){
+    for(int ene(0); ene < 2; ene++){
+      for(int his(0); his < NHis; his++){
+	if(hFile[var][ene][his]) hFile[var][ene][his]->Delete();
+      }
+    } // Loop over energies
+  }
+}
 
 void energy_compare(TString filetype = ".eps"){
   styles style("Standard"); style.setDefaultStyle();
@@ -82,9 +209,9 @@ void energy_compare(TString filetype = ".eps"){
   TString xTitle = "", yTitle = "", Title = "", Pname, Hname, totCut, energies[] = {"_8_TeV", "_13_TeV"};
   TString logtag = "_log"; logtag += filetype;
   float maxHisto(-1), entries[2][NHis], means[2][NHis];
-  double legX = 0.6, legY = 0.71;
+  double legX = 0.6, legY = 0.93;
   double legW = 0.12, legH = 0.22;
-  TLegend leg(legX, legY, legX+legW, legY+legH);
+  TLegend leg(legX, legY-legH, legX+legW, legY);
   leg.SetTextSize(0.056); leg.SetFillColor(0); leg.SetFillStyle(0); leg.SetBorderSize(0);
   leg.SetTextFont(132);
   TLine line; line.SetLineColor(2); line.SetLineWidth(2); line.SetLineStyle(2);
@@ -113,7 +240,7 @@ void energy_compare(TString filetype = ".eps"){
     if(VarName[var]=="wlep_dphi") {xTitle = "#Delta#phi(W,lepton)"; digits = 2;}
 
     yTitle = "Entries ";
-    if(VarName[var]=="met" || VarName[var]=="ht" || VarName[var]=="mt" || VarName[var]=="wlep_dphi"){				   
+    if(VarName[var]=="met" || VarName[var]=="ht" || VarName[var]=="mt" || VarName[var]=="wlep_dphi"){
       yTitle+="/(";
       yTitle+= RoundNumber((Range[var][1]-Range[var][0]), digits, (double)nBins[var]);
       if(VarName[var]=="wlep_dphi") yTitle+=" rad)";
