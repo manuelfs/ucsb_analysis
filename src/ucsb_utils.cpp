@@ -22,8 +22,16 @@ bool eigen2x2(float matrix[2][2], float &eig1, float &eig2){
   return true;
 }
 
-bool comp_pair(const int_double& left, const int_double& right){ 
+bool id_big2small(const int_double& left, const int_double& right){ 
   return left.second > right.second; 
+}  
+
+bool dd_small2big(const double_double& left, const double_double& right){ 
+  return left.first < right.first; 
+}  
+
+bool dd_big2small(const double_double& left, const double_double& right){ 
+  return left.first > right.first; 
 }  
 
 void DivideHistosEff(TH1F* hNum, TH1F* hDen, TH1F* hEff){

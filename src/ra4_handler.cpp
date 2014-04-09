@@ -24,7 +24,6 @@ const double CSVCuts[] = {0.244, 0.679, 0.898};
 const std::vector<std::vector<int> > VRunLumiPrompt(MakeVRunLumi("Golden"));
 const std::vector<std::vector<int> > VRunLumi24Aug(MakeVRunLumi("24Aug"));
 const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
-const double PI = 3.14159265;
 
 #define NTrigEfficiencies 14
 #define NTrigReduced 19
@@ -180,7 +179,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     else tree.spher_jets = -999.;
     
     if(tree.jets_csv.size() >= 2){
-      sort(csv_sorted.begin(), csv_sorted.end(), comp_pair);
+      sort(csv_sorted.begin(), csv_sorted.end(), id_big2small);
       tree.dr_bb = dR(tree.jets_eta[csv_sorted[0].first], tree.jets_eta[csv_sorted[1].first], 
 		      tree.jets_phi[csv_sorted[0].first], tree.jets_phi[csv_sorted[1].first]);
 //       cout<<"Calculated dr_bb = "<<tree.dr_bb<<endl;

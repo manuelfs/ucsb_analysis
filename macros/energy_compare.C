@@ -6,11 +6,14 @@
 #include "inc/ucsb_utils.hpp"
 #include "src/ucsb_utils.cpp"
 
+#include "macros/utils_macros.cpp"
+
 #include <fstream>
 #include <iostream>
 #include <cmath>
 #include <string>
 #include <sstream>
+#include <ctime>
 #include "TChain.h"
 #include "TFile.h"
 #include "TLine.h"
@@ -21,41 +24,24 @@
 #include "TString.h"
 #include "TH1F.h"
 #include "TMath.h"
-#include "TLatex.h"
 
-#define NVar 3
-//#define NVar 17
-#define NHis 4
-const double PI = 3.14159265;
+#define NVar 3  // Lepton isolation
+//#define NVar 17  // 14-03-21 presentation
 
 using namespace std;
 using std::cout;
 using std::endl;
-
 
 void lep_isolation(TString filetype = ".eps"){
   styles style("Standard"); style.setDefaultStyle();
   gStyle->SetHatchesLineWidth(2);
  
   //Files
-  TString FileNames[2][NHis] = {{"archive/TT_CT10_TuneZ2star_8TeV-powheg-tauola_Summer12_DR53X-PU_S10_START53_V7A-v2_AODSIM_UCSB1881_v71_.root",
-				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68_1150_525.root",
-				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-25to500_50GeVX50GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1732reshuf_v68_1400_25.root",
-				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68_1400_525.root"},
-				{"archive/TTbar_TuneZ2star_13TeV-powheg-tauola_Summer13dr53X-PU25bx25_START53_V19D-v1_AODSIM_UCSB2027_v71_.root",
-				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1145_500.root",
-				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1500_1_.root",
-				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1500_500.root"}};
   TString legNames[2][NHis] = {{"t#bar{t} [av=", "Signal @  8 TeV [cut at ","T1tttt(1400,25) [n=","T1tttt(1400,525) [n="},
 			       {"t#bar{t} [av=", "Signal @ 13 TeV [cut at ","T1tttt(1500,1) [n=","T1tttt(1500,500) [n="}}, legCaption;
   TChain *chain[2][NHis];
-  for(int ene(0); ene < 2; ene++){
-    for(int his(0); his < NHis; his++){
-      chain[ene][his] = new TChain("tree");
-      chain[ene][his]->Add(FileNames[ene][his]);
-    }
-  }
-  
+  ReadChains(chain);
+
   // Variables and cuts
   TString VarName[] = {"lep_reliso", "lep_reliso", "lep_reliso"};
   TString Cuts[] = {"abs(lep_tru_momid)!=15&&abs(lep_tru_momid)<26", "abs(lep_tru_momid)==15", 
@@ -76,7 +62,7 @@ void lep_isolation(TString filetype = ".eps"){
   const int doHis = 1;
 
   // Legend
-  const double legX = 0.26, legY = 0.93;
+  const double legX = 0.26, legY = 0.9;
   const double legW = 0.12, legH = 0.12;
   TLegend leg(legX, legY-legH, legX+legW, legY);
   leg.SetTextSize(0.056); leg.SetFillColor(0); leg.SetFillStyle(0); leg.SetBorderSize(0);
@@ -168,43 +154,41 @@ void energy_compare(TString filetype = ".eps"){
   gStyle->SetHatchesLineWidth(2);
  
   //Files
-  TString FileNames[2][NHis] = {{"archive/TT_CT10_TuneZ2star_8TeV-powheg-tauola_Summer12_DR53X-PU_S10_START53_V7A-v2_AODSIM_UCSB1881_v71_.root",
-				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68_1150_525.root",
-				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-25to500_50GeVX50GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1732reshuf_v68_1400_25.root",
-				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68_1400_525.root"},
-				{"archive/TTbar_TuneZ2star_13TeV-powheg-tauola_Summer13dr53X-PU25bx25_START53_V19D-v1_AODSIM_UCSB2027_v71_.root",
-				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1145_500.root",
-				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1500_1_.root",
-				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1500_500.root"}};
   TString legNames[2][NHis] = {{"t#bar{t} [n=", "T1tttt(1150,525) [n=","T1tttt(1400,25) [n=","T1tttt(1400,525) [n="},
 			       {"t#bar{t} [n=", "T1tttt(1150,500) [n=","T1tttt(1500,1) [n=","T1tttt(1500,500) [n="}}, legCaption;
   TChain *chain[2][NHis];
-  for(int ene(0); ene < 2; ene++){
-    for(int his(0); his < NHis; his++){
-      chain[ene][his] = new TChain("tree");
-      chain[ene][his]->Add(FileNames[ene][his]);
-    }
-  }
+  ReadChains(chain);
   
 
   // Variables and cuts
-  TString VarName[] = {"met", "ht", "ntrupv", "nel+nmu", "njets[3]", "njets[1]", "nbm[1]", "wlep_dphi", "mt",
-		       "met", "ht", "nel+nmu", "njets[3]", "njets[1]", "nbm[1]", "wlep_dphi", "mt"};
-  TString Cuts[] = {"1", "1", "1/weight", "1", "1", "1", "1", "1", "1",
-		    "(nvel+nvmu)==1&&(nel+nmu)==1&&ht>500&&njets[1]>=6&&nbm[1]>=2",
-		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&njets[1]>=6&&nbm[1]>=2",
-		    "ht>500&&met>250&&njets[1]>=6&&nbm[1]>=2",
-		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500",
-		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500",
-		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500",
-		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",
-		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2"};
-  float Range[][2] = {{0,1000}, {0,2200}, {0,60}, {0,6}, {0,15}, {0,15}, {0,7}, {0, 3.2}, {0, 800}, 
-		      {0,1000}, {0,2200}, {0,6}, {0,15}, {0,15}, {0,7}, {0, 3.2}, {0, 800}};
-  int nBins[] = {50, 55, 60, 6, 15, 15, 7, 32, 40, 
-		 50, 55, 6, 15, 15, 7, 32, 40};
-  TString tags[] = {"", "", "", "", "", "", "", "", "", 
-		    "n-1", "n-1", "n-1", "n-1", "n-1", "n-1", "n-1", "n-1"};
+  TString allcuts = "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2";
+  TString VarName[] = {"wlep_dphi", "mt", "spher", "dr_bb",
+		       "wlep_dphi", "mt", "spher", "dr_bb"};
+  TString Cuts[] = {"1", "1", "1", "1",
+		    allcuts, allcuts, allcuts, allcuts};
+  float Range[][2] = {{0, 3.2}, {0, 800}, {0, 1}, {0, 6.5},
+		      {0, 3.2}, {0, 800}, {0, 1}, {0, 6.5}};
+  int nBins[] = {32, 40, 50, 65,
+		 32, 40, 50, 65};
+  TString tags[] = {"", "", "", "", "",
+		    "allcuts", "allcuts", "allcuts", "allcuts"};
+//   TString VarName[] = {"met", "ht", "ntrupv", "nel+nmu", "njets[3]", "njets[1]", "nbm[1]", "wlep_dphi", "mt",
+// 		       "met", "ht", "nel+nmu", "njets[3]", "njets[1]", "nbm[1]", "wlep_dphi", "mt"};
+//   TString Cuts[] = {"1", "1", "1/weight", "1", "1", "1", "1", "1", "1",
+// 		    "(nvel+nvmu)==1&&(nel+nmu)==1&&ht>500&&njets[1]>=6&&nbm[1]>=2",
+// 		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&njets[1]>=6&&nbm[1]>=2",
+// 		    "ht>500&&met>250&&njets[1]>=6&&nbm[1]>=2",
+// 		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500",
+// 		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500",
+// 		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500",
+// 		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",
+// 		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2"};
+//   float Range[][2] = {{0,1000}, {0,2200}, {0,60}, {0,6}, {0,15}, {0,15}, {0,7}, {0, 3.2}, {0, 800}, 
+// 		      {0,1000}, {0,2200}, {0,6}, {0,15}, {0,15}, {0,7}, {0, 3.2}, {0, 800}};
+//   int nBins[] = {50, 55, 60, 6, 15, 15, 7, 32, 40, 
+// 		 50, 55, 6, 15, 15, 7, 32, 40};
+//   TString tags[] = {"", "", "", "", "", "", "", "", "", 
+// 		    "n-1", "n-1", "n-1", "n-1", "n-1", "n-1", "n-1", "n-1"};
 
   // Histograms and canvas
   TCanvas can;
@@ -223,7 +207,7 @@ void energy_compare(TString filetype = ".eps"){
   TArrow arrow; arrow.SetLineWidth(2); arrow.SetArrowSize(.02);
 
   for(int var(0); var < NVar; var++){
-    if(!VarName[var].Contains("dphi") && !VarName[var].Contains("mt")) continue;
+    //if(!VarName[var].Contains("dphi") && !VarName[var].Contains("mt")) continue;
 
     totCut = "weight*("; totCut += Cuts[var]; totCut += ")";
 
@@ -243,15 +227,19 @@ void energy_compare(TString filetype = ".eps"){
     if(VarName[var]=="njets[3]") xTitle = "Number of 60+ GeV jets"; 
     if(VarName[var]=="nbm[3]") xTitle = "Number of 60+ GeV b-tags (CSVM)"; 
     if(VarName[var]=="wlep_dphi") {xTitle = "#Delta#phi(W,lepton)"; digits = 2;}
+    if(VarName[var]=="spher") {xTitle = "Transverse sphericity"; digits = 2;}
+    if(VarName[var]=="dr_bb") {xTitle = "#DeltaR(bb)"; digits = 2;}
 
     yTitle = "Entries ";
-    if(VarName[var]=="met" || VarName[var]=="ht" || VarName[var]=="mt" || VarName[var]=="wlep_dphi"){
+    if(VarName[var]=="met" || VarName[var]=="ht" || VarName[var]=="mt" || VarName[var]=="wlep_dphi" ||
+       VarName[var]=="spher" || VarName[var]=="dr_bb"){
       yTitle+="/(";
       yTitle+= RoundNumber((Range[var][1]-Range[var][0]), digits, (double)nBins[var]);
       if(VarName[var]=="wlep_dphi") yTitle+=" rad)";
+      else if(VarName[var]=="spher" || VarName[var]=="dr_bb") yTitle+=")";
       else yTitle+=" GeV)";
     }
-    leg.Clear(); leg.SetX1NDC(legX);leg.SetY1NDC(legY);
+    leg.Clear(); leg.SetX1NDC(legX);leg.SetY2NDC(legY);
     for(int ene(0); ene < 2; ene++){
       Title = "Expected yields for 19.6 fb^{-1} at #sqrt{s} ="; Title += energies[ene]; 
       Title.ReplaceAll("_"," "); 
@@ -316,7 +304,7 @@ void energy_compare(TString filetype = ".eps"){
       }
     } // Loop over energies
 
-    leg.Clear(); leg.SetY1NDC(legY-0.04);
+    leg.Clear(); //leg.SetY1NDC(legY-0.04);
     for(int his(0); his < 2; his++){
       for(int ene(0); ene < 2; ene++){
 	legCaption = legNames[ene][his]; legCaption += energies[ene];
@@ -388,21 +376,8 @@ void TableYields(TString cuts, TChain *chain[2][4], TString tag1, TString tag2, 
 }
 
 void YieldsPrint(){
-  TString FileNames[2][NHis] = {{"archive/TT_CT10_TuneZ2star_8TeV-powheg-tauola_Summer12_DR53X-PU_S10_START53_V7A-v2_AODSIM_UCSB1881_v71_.root",
-				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68_1150_525.root",
-				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-25to500_50GeVX50GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1732reshuf_v68_1400_25.root",
-				 "archive/SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68_1400_525.root"},
-				{"archive/TTbar_TuneZ2star_13TeV-powheg-tauola_Summer13dr53X-PU25bx25_START53_V19D-v1_AODSIM_UCSB2027_v71_.root",
-				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1145_500.root",
-				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1500_1_.root",
-				 "archive/SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71_1500_500.root"}};
   TChain *chain[2][NHis];
-  for(int ene(0); ene < 2; ene++){
-    for(int his(0); his < NHis; his++){
-      chain[ene][his] = new TChain("tree");
-      chain[ene][his]->Add(FileNames[ene][his]);
-    }
-  }
+  ReadChains(chain);
   TString name = "txt/Yields_8_13_TeV.tex";
   ofstream file(name);
 
@@ -428,3 +403,4 @@ void YieldsPrint(){
   file.close();
   cout<<"Written "<<name<<endl;
 } 
+
