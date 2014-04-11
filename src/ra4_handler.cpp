@@ -118,6 +118,8 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     tree.nvel = veto_electrons.size();
     tree.nmu  = signal_muons.size();
     tree.nvmu = veto_muons.size();
+    if(tree.nel+tree.nmu == tree.nvel+tree.nvmu) tree.nlep = tree.nel+tree.nmu;
+    else tree.nlep = -99;
     AllTriggers = 0;
     for(int ieff(0); ieff < NTrigReduced; ieff++){
       if(TriggerIndex[ieff] >= 0){
@@ -317,13 +319,13 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     if(index_onmet >= 0) tree.onmet = standalone_triggerobject_et->at(index_onmet);
     else tree.onmet = -999;
     // Finding mT and deltaPhi with respect to highest pT lepton
-    tree.mt = -999.; tree.wlep_dphi = -999.;
+    tree.mt = -999.; tree.dphi_wlep = -999.;
     if(lepmax_pt > 0){
       double lepmax_phi = atan2(lepmax_py, lepmax_px);
       double Wx = pfTypeImets_ex->at(0) + lepmax_px;
       double Wy = pfTypeImets_ey->at(0) + lepmax_py;
-      tree.wlep_dphi = abs(atan2(Wy,Wx)-lepmax_phi);
-      if(tree.wlep_dphi > PI) tree.wlep_dphi = 2*PI-tree.wlep_dphi;
+      tree.dphi_wlep = abs(atan2(Wy,Wx)-lepmax_phi);
+      if(tree.dphi_wlep > PI) tree.dphi_wlep = 2*PI-tree.dphi_wlep;
       tree.mt = sqrt(2*lepmax_pt* tree.met*(1-cos(tree.met_phi-lepmax_phi)));
     }
 

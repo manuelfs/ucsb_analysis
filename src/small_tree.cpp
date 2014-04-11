@@ -10,6 +10,7 @@ using std::endl;
 
 small_tree::small_tree():
   tree("tree", "tree"){
+  tree.Branch("nlep", &nlep);
   tree.Branch("nel", &nel);
   tree.Branch("nvel", &nvel);
   tree.Branch("nmu", &nmu);
@@ -29,7 +30,7 @@ small_tree::small_tree():
   tree.Branch("mt", &mt);
   tree.Branch("met", &met);
   tree.Branch("met_phi", &met_phi);
-  tree.Branch("wlep_dphi", &wlep_dphi);
+  tree.Branch("dphi_wlep", &dphi_wlep);
   tree.Branch("metsig", &metsig);
   tree.Branch("onmet", &onmet);
   tree.Branch("dr_bb", &dr_bb);
@@ -52,6 +53,7 @@ small_tree::small_tree():
 small_tree::small_tree(TString filename):
   chain("tree"){
   chain.Add(filename);
+  chain.SetBranchAddress("nlep", &nlep);
   chain.SetBranchAddress("nel", &nel);
   chain.SetBranchAddress("nvel", &nvel);
   chain.SetBranchAddress("nmu", &nmu);
@@ -71,7 +73,7 @@ small_tree::small_tree(TString filename):
   chain.SetBranchAddress("mt", &mt);
   chain.SetBranchAddress("met", &met);
   chain.SetBranchAddress("met_phi", &met_phi);
-  chain.SetBranchAddress("wlep_dphi", &wlep_dphi);
+  chain.SetBranchAddress("dphi_wlep", &dphi_wlep);
   chain.SetBranchAddress("metsig", &metsig);
   chain.SetBranchAddress("onmet", &onmet);
   chain.SetBranchAddress("dr_bb", &dr_bb);

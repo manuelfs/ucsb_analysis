@@ -162,8 +162,8 @@ void energy_compare(TString filetype = ".eps"){
 
   // Variables and cuts
   TString allcuts = "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2";
-  TString VarName[] = {"wlep_dphi", "mt", "spher", "dr_bb",
-		       "wlep_dphi", "mt", "spher", "dr_bb"};
+  TString VarName[] = {"dphi_wlep", "mt", "spher", "dr_bb",
+		       "dphi_wlep", "mt", "spher", "dr_bb"};
   TString Cuts[] = {"1", "1", "1", "1",
 		    allcuts, allcuts, allcuts, allcuts};
   float Range[][2] = {{0, 3.2}, {0, 800}, {0, 1}, {0, 6.5},
@@ -172,8 +172,8 @@ void energy_compare(TString filetype = ".eps"){
 		 32, 40, 50, 65};
   TString tags[] = {"", "", "", "", "",
 		    "allcuts", "allcuts", "allcuts", "allcuts"};
-//   TString VarName[] = {"met", "ht", "ntrupv", "nel+nmu", "njets[3]", "njets[1]", "nbm[1]", "wlep_dphi", "mt",
-// 		       "met", "ht", "nel+nmu", "njets[3]", "njets[1]", "nbm[1]", "wlep_dphi", "mt"};
+//   TString VarName[] = {"met", "ht", "ntrupv", "nel+nmu", "njets[3]", "njets[1]", "nbm[1]", "dphi_wlep", "mt",
+// 		       "met", "ht", "nel+nmu", "njets[3]", "njets[1]", "nbm[1]", "dphi_wlep", "mt"};
 //   TString Cuts[] = {"1", "1", "1/weight", "1", "1", "1", "1", "1", "1",
 // 		    "(nvel+nvmu)==1&&(nel+nmu)==1&&ht>500&&njets[1]>=6&&nbm[1]>=2",
 // 		    "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&njets[1]>=6&&nbm[1]>=2",
@@ -226,16 +226,16 @@ void energy_compare(TString filetype = ".eps"){
     if(VarName[var]=="nbm[1]") {xTitle = "Number of 40+ GeV b-tags (CSVM)"; xcut=2;}
     if(VarName[var]=="njets[3]") xTitle = "Number of 60+ GeV jets"; 
     if(VarName[var]=="nbm[3]") xTitle = "Number of 60+ GeV b-tags (CSVM)"; 
-    if(VarName[var]=="wlep_dphi") {xTitle = "#Delta#phi(W,lepton)"; digits = 2;}
+    if(VarName[var]=="dphi_wlep") {xTitle = "#Delta#phi(W,lepton)"; digits = 2;}
     if(VarName[var]=="spher") {xTitle = "Transverse sphericity"; digits = 2;}
     if(VarName[var]=="dr_bb") {xTitle = "#DeltaR(bb)"; digits = 2;}
 
     yTitle = "Entries ";
-    if(VarName[var]=="met" || VarName[var]=="ht" || VarName[var]=="mt" || VarName[var]=="wlep_dphi" ||
+    if(VarName[var]=="met" || VarName[var]=="ht" || VarName[var]=="mt" || VarName[var]=="dphi_wlep" ||
        VarName[var]=="spher" || VarName[var]=="dr_bb"){
       yTitle+="/(";
       yTitle+= RoundNumber((Range[var][1]-Range[var][0]), digits, (double)nBins[var]);
-      if(VarName[var]=="wlep_dphi") yTitle+=" rad)";
+      if(VarName[var]=="dphi_wlep") yTitle+=" rad)";
       else if(VarName[var]=="spher" || VarName[var]=="dr_bb") yTitle+=")";
       else yTitle+=" GeV)";
     }
@@ -396,7 +396,7 @@ void YieldsPrint(){
 	      "RA4 cuts","$N^{50\\text{ GeV}}_{\\rm jets}\\geq 4$",file);
   TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>450&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,
 	      "RA4 cuts", "$E^{\\rm miss}_T>450\\text{ GeV}$",file);
-  TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2&&wlep_dphi>1",chain,
+  TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2&&dphi_wlep>1",chain,
 	      "RA4 cuts", "$\\Delta\\phi>1$",file);
   TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2&&mt>100",chain,
 	      "RA4 cuts", "$m_T>100\\text{ GeV}$",file);

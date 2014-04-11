@@ -18,6 +18,7 @@ public:
   bool isReadOnly;
   TChain chain;
   TTree tree;
+  int nlep;
   int nel;
   int nvel;
   int nmu;
@@ -37,7 +38,7 @@ public:
   float mt;
   float met;
   float met_phi;
-  float wlep_dphi;
+  float dphi_wlep;
   float metsig;
   float onmet;
   float dr_bb;

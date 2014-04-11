@@ -10,6 +10,7 @@ int main(){
   TString name;
   // Add all small_tree variables here
   vector<TString> variables;
+  variables.push_back("int nlep");
   variables.push_back("int nel");
   variables.push_back("int nvel");
   variables.push_back("int nmu");
@@ -29,7 +30,7 @@ int main(){
   variables.push_back("float mt");
   variables.push_back("float met");
   variables.push_back("float met_phi");
-  variables.push_back("float wlep_dphi");
+  variables.push_back("float dphi_wlep");
   variables.push_back("float metsig");
   variables.push_back("float onmet");
   variables.push_back("float dr_bb");
