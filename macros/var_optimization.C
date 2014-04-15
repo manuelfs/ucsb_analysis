@@ -25,6 +25,7 @@
 #include "TString.h"
 #include "TH1F.h"
 #include "TMath.h"
+#include "TGraph.h"
 
 #define NVar 4
 
@@ -62,7 +63,14 @@ void divide_var(vector<float> &cuts, vector<float> &fractions, int nbins, vector
   for(int ibin(0); ibin<last; ibin++) fractions[last] -= fractions[ibin];  
 }
 
+double cal_fom(double sig, double bkg){
+  return 2*(sqrt(sig+bkg)-sqrt(bkg));
+}
+
 void var_optimization(long fixnentries=1000, int nDivisions = 10){
+  styles style("Standard"); style.setDefaultStyle();
+  TCanvas can;
+
   TChain *allchains[2][NHis], *chain;
   ReadChains(allchains);
   long nentries;
@@ -75,35 +83,37 @@ void var_optimization(long fixnentries=1000, int nDivisions = 10){
   float weight, ht, met;
   int nlep;
   vector<int> *njets(0), *nbm(0);
-  vector<float> Yields[2][NHis][NVar], cutLimits[NVar];
+  vector<float> Yields[2][NHis][NVar], cutLimits[NVar], fom[2][NHis][NVar], effi[2][NHis][NVar];
+  TGraph *graph[2][NHis][NVar];
+  int colors[2][NHis] = {{kRed-7, kRed+1, kGreen+1, kMagenta+1}, {kBlue-7, kBlue+1, kGreen+2, kMagenta+2}};
 
   time_t startTime, curTime;
   time(&startTime);
-   for(int ene(0); ene < 1; ene++){
-     for(int his(NHis-1); his >= 1; his--){
-       bool isFirst = (ene==0 && his == NHis-1);
+  for(int ene(0); ene < 2; ene++){
+    for(int his(NHis-1); his >= 0; his--){
+      bool isFirst = (ene==0 && his == NHis-1);
 
-       // Setting up chain addresses
-       chain = allchains[ene][his];
-       if(chain->GetEntries() < fixnentries || fixnentries < 0) nentries = chain->GetEntries();
-       else nentries = fixnentries;
-       chain->SetBranchAddress("weight", &weight);
-       chain->SetBranchAddress("nlep", &nlep);
-       chain->SetBranchAddress("ht", &ht);
-       chain->SetBranchAddress("met", &met);
-       chain->SetBranchAddress("nbm", &nbm);
-       chain->SetBranchAddress("njets", &njets);
-       for(int var(0); var < NVar; var++){
+      // Setting up chain addresses
+      chain = allchains[ene][his];
+      if(chain->GetEntries() < fixnentries || fixnentries < 0) nentries = chain->GetEntries();
+      else nentries = fixnentries;
+      chain->SetBranchAddress("weight", &weight);
+      chain->SetBranchAddress("nlep", &nlep);
+      chain->SetBranchAddress("ht", &ht);
+      chain->SetBranchAddress("met", &met);
+      chain->SetBranchAddress("nbm", &nbm);
+      chain->SetBranchAddress("njets", &njets);
+      for(int var(0); var < NVar; var++){
  	chain->SetBranchAddress(sVariable[var], &fVariable[var]);
  	vVariable[var].resize(0);
  	for(int cut(0); cut < nDivisions; cut++)
  	  Yields[ene][his][var].push_back(0);
-       }
-       totYield[ene][his] = 0;
-       cout<<endl<<ene<<", "<<his<<": Doing "<<nentries<<" entries"<<endl;
-       for(int entry(0); entry<nentries; entry++){
+      }
+      totYield[ene][his] = 0;
+      cout<<endl<<ene<<", "<<his<<": Doing "<<nentries<<" entries"<<endl;
+      for(int entry(0); entry<nentries; entry++){
  	chain->GetEntry(entry);
- 	weight = 1;
+ 	//weight = 1;
  	totYield[ene][his] += weight;
 	if(nlep!=1 || met<=250 || ht<= 500 || njets->at(1)<6 || nbm->at(1)<2) continue; // RA4 cuts 
  	for(int var(0); var < NVar; var++){
@@ -119,23 +129,23 @@ void var_optimization(long fixnentries=1000, int nDivisions = 10){
 	    }
  	  }
  	} // Loop over variables
-       } // Loop over all entries
+      } // Loop over all entries
 
-       if(isFirst){ // Sorting and finding ranges
+      if(isFirst){ // Sorting and finding ranges
  	for(int var(0); var < NVar; var++){
- 	  cout<<var<<": Tot yield "<<totYield[ene][his]<<", after cut "<<Yields[ene][his][var][0]
- 	      <<", entries in vVariable "<<vVariable[var].size()<<endl;
+//  	  cout<<var<<": Tot yield "<<totYield[ene][his]<<", after cut "<<Yields[ene][his][var][0]
+//  	      <<", entries in vVariable "<<vVariable[var].size()<<endl;
  	  if(vVariable[var].size()==0){cout<<"No events passed cuts"<<endl; return;}
- 	//       cout<<endl<<sVariable[var]<<" Before sorting: "<<vVariable[var][0].first<<", "<<vVariable[var][1].first<<", "
+	  //       cout<<endl<<sVariable[var]<<" Before sorting: "<<vVariable[var][0].first<<", "<<vVariable[var][1].first<<", "
  	  // 	  <<vVariable[var][vVariable[var].size()-1].first<<endl;
  	  sort(vVariable[var].begin(), vVariable[var].end(), dd_small2big);
  	  vector<float> fractions;
  	  divide_var(cutLimits[var], fractions, nDivisions, vVariable[var], Yields[ene][his][var][0]);
-    	  cout<<cutLimits[var].size()<<" bins "<<sVariable[var] <<": "<<RoundNumber(vVariable[var][0].first,2)<<", ";
-    	  for(uint ind(0); ind<cutLimits[var].size()-1; ind++) cout<<RoundNumber(cutLimits[var][ind],2)<<", ";
-    	  cout<<RoundNumber(vVariable[var][vVariable[var].size()-1].first,2)<<endl;
-//     	  for(int ind(0); ind<nDivisions; ind++) cout<<RoundNumber(fractions[ind]*100,1)<<", ";
-//     	  cout<<endl;
+//     	  cout<<cutLimits[var].size()<<" bins "<<sVariable[var] <<": "<<RoundNumber(vVariable[var][0].first,2)<<", ";
+//     	  for(uint ind(0); ind<cutLimits[var].size()-1; ind++) cout<<RoundNumber(cutLimits[var][ind],2)<<", ";
+//     	  cout<<RoundNumber(vVariable[var][vVariable[var].size()-1].first,2)<<endl;
+	  //     	  for(int ind(0); ind<nDivisions; ind++) cout<<RoundNumber(fractions[ind]*100,1)<<", ";
+	  //     	  cout<<endl;
  	  for(unsigned int row(1); row < cutLimits[var].size(); row++)
  	    for(unsigned int col(0); col < cutLimits[var].size(); col++){
  	      int icol(col), irow(row);
@@ -143,18 +153,43 @@ void var_optimization(long fixnentries=1000, int nDivisions = 10){
  	      if(icol >= irow) 
  		Yields[ene][his][var][row] += Yields[ene][his][var][0]*fractions[col];
  	    }
-	  cout<<endl;
+// 	  cout<<endl;
  	} // Loop over variables
-       } // If it is first iteration
-        for(int var(0); var < NVar; var++){
-  	cout<<ene<<", "<<his<<": Yields -> ";
-  	for(unsigned int cut(0); cut < cutLimits[var].size(); cut++)
-  	  cout<<RoundNumber(Yields[ene][his][var][cut], 1)<<", ";
-  	cout<<endl;
-        }
-     } // Loop over samples (NHis)
-   } // Loop over 8 TeV and 13 TeV
+      } // If it is first iteration
+//         for(int var(0); var < NVar; var++){
+//     	cout<<ene<<", "<<his<<": Yields -> ";
+//     	for(unsigned int cut(0); cut < cutLimits[var].size(); cut++)
+//     	  cout<<RoundNumber(Yields[ene][his][var][cut], 1)<<", ";
+//     	cout<<endl;
+//         }
+    } // Loop over samples (NHis)
+  } // Loop over 8 TeV and 13 TeV
 
+  for(int ene(0); ene < 2; ene++){
+    for(int var(0); var < NVar; var++){
+      for(int his(1); his < NHis; his++){
+	for(unsigned int ind(0); ind < cutLimits[var].size(); ind++){
+	  if(Yields[ene][0][var][ind] < 1) Yields[ene][0][var][ind] = 1;
+	  fom[ene][his][var].push_back(cal_fom(Yields[ene][his][var][ind], Yields[ene][0][var][ind]));
+	  if(Yields[ene][his][var][0])
+	    effi[ene][his][var].push_back(Yields[ene][his][var][ind]/Yields[ene][his][var][0]);
+	  else effi[ene][his][var].push_back(0);
+	}
+	graph[ene][his][var] = new TGraph(cutLimits[var].size(), &(effi[ene][his][var][0]), &(fom[ene][his][var][0]));
+	graph[ene][his][var]->SetLineColor(colors[ene][his]);
+	graph[ene][his][var]->SetMinimum(0);
+	if(his==1) graph[ene][his][var]->Draw("AC");
+	else graph[ene][his][var]->Draw("C same");
+      } // Loop over samples (NHis)
+      TString Pname = "plots/var_opti_"; Pname += ene; Pname += "_"; Pname += sVariable[var]; Pname += ".eps";
+      can.SaveAs(Pname);
+    } // Loop over variables
+  } // Loop over 8 TeV and 13 TeV
+
+  for(int ene(0); ene < 2; ene++)
+    for(int var(0); var < NVar; var++)
+      for(int his(1); his < NHis; his++)
+	if(graph[ene][his][var])graph[ene][his][var]->Delete();
   time(&curTime);
   cout<<endl<<"Sorting  "<<nentries<<" entries takes "<<difftime(curTime,startTime)<<" seconds"<<endl<<endl;  
 
