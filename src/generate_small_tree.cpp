@@ -7,7 +7,7 @@
 using namespace std;
 
 int main(){
-  TString name;
+  TString name, copy;
   // Add all small_tree variables here
   vector<TString> variables;
   variables.push_back("int nlep");
@@ -15,14 +15,14 @@ int main(){
   variables.push_back("int nvel");
   variables.push_back("int nmu");
   variables.push_back("int nvmu");
-  variables.push_back("vector<int> trigger");
-  variables.push_back("vector<int> njets");  // Number of jets for different pT thresholds
-  variables.push_back("vector<int> nbt");    // Number of tight b-tags for different pT thresholds
-  variables.push_back("vector<int> nbm");    // Number of medium b-tags for different pT thresholds
-  variables.push_back("vector<int> nbl");    // Number of loose b-tags for different pT thresholds
-  variables.push_back("vector<int> lep_id");
-  variables.push_back("vector<int> lep_tru_id");
-  variables.push_back("vector<int> lep_tru_momid");
+  variables.push_back("vector<int>* trigger");
+  variables.push_back("vector<int>* njets");  // Number of jets for different pT thresholds
+  variables.push_back("vector<int>* nbt");    // Number of tight b-tags for different pT thresholds
+  variables.push_back("vector<int>* nbm");    // Number of medium b-tags for different pT thresholds
+  variables.push_back("vector<int>* nbl");    // Number of loose b-tags for different pT thresholds
+  variables.push_back("vector<int>* lep_id");
+  variables.push_back("vector<int>* lep_tru_id");
+  variables.push_back("vector<int>* lep_tru_momid");
   variables.push_back("float weight");
   variables.push_back("float wpu");
   variables.push_back("float wlumi");
@@ -38,15 +38,15 @@ int main(){
   variables.push_back("float spher_jets");
   variables.push_back("float spher_nolin");
   variables.push_back("float ntrupv");  // Thinking about casting it into an int
-  variables.push_back("vector<double> jets_pt");
-  variables.push_back("vector<double> jets_eta");
-  variables.push_back("vector<double> jets_phi");
-  variables.push_back("vector<double> jets_csv");
-  variables.push_back("vector<double> lep_pt");
-  variables.push_back("vector<double> lep_eta");
-  variables.push_back("vector<double> lep_phi");
-  variables.push_back("vector<double> lep_reliso");
-  variables.push_back("vector<double> lep_tru_dr");
+  variables.push_back("vector<double>* jets_pt");
+  variables.push_back("vector<double>* jets_eta");
+  variables.push_back("vector<double>* jets_phi");
+  variables.push_back("vector<double>* jets_csv");
+  variables.push_back("vector<double>* lep_pt");
+  variables.push_back("vector<double>* lep_eta");
+  variables.push_back("vector<double>* lep_phi");
+  variables.push_back("vector<double>* lep_reliso");
+  variables.push_back("vector<double>* lep_tru_dr");
 
   std::ofstream cppFile("src/small_tree.cpp"), hppFile("inc/small_tree.hpp");
   
@@ -69,6 +69,11 @@ int main(){
   hppFile << "  TTree tree;\n";
   for(unsigned int var(0); var<variables.size(); var++){
     hppFile << "  "<<variables[var]<<";\n";
+    if(variables[var].Contains("*")){
+      copy = variables[var]; 
+      copy.ReplaceAll("* "," v_"); 
+      hppFile << "  "<<copy<<";\n";
+    }
   }
 
   hppFile << "\n  void Fill();\n";
@@ -93,6 +98,8 @@ int main(){
     name = variables[var];
     name.Remove(0, name.Last(' ')+1);
     cppFile << "  tree.Branch(\""<<name<<"\", &"<<name<<");\n";
+    copy = "v_"; copy += name;
+    if(variables[var].Contains("*")) cppFile << "  " << name <<" = &"<< copy << ";\n";
   }
   cppFile << "  isReadOnly = false;\n";
   cppFile << "}\n\n";

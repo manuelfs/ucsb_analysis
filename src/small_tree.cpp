@@ -16,13 +16,21 @@ small_tree::small_tree():
   tree.Branch("nmu", &nmu);
   tree.Branch("nvmu", &nvmu);
   tree.Branch("trigger", &trigger);
+  trigger = &v_trigger;
   tree.Branch("njets", &njets);
+  njets = &v_njets;
   tree.Branch("nbt", &nbt);
+  nbt = &v_nbt;
   tree.Branch("nbm", &nbm);
+  nbm = &v_nbm;
   tree.Branch("nbl", &nbl);
+  nbl = &v_nbl;
   tree.Branch("lep_id", &lep_id);
+  lep_id = &v_lep_id;
   tree.Branch("lep_tru_id", &lep_tru_id);
+  lep_tru_id = &v_lep_tru_id;
   tree.Branch("lep_tru_momid", &lep_tru_momid);
+  lep_tru_momid = &v_lep_tru_momid;
   tree.Branch("weight", &weight);
   tree.Branch("wpu", &wpu);
   tree.Branch("wlumi", &wlumi);
@@ -39,14 +47,23 @@ small_tree::small_tree():
   tree.Branch("spher_nolin", &spher_nolin);
   tree.Branch("ntrupv", &ntrupv);
   tree.Branch("jets_pt", &jets_pt);
+  jets_pt = &v_jets_pt;
   tree.Branch("jets_eta", &jets_eta);
+  jets_eta = &v_jets_eta;
   tree.Branch("jets_phi", &jets_phi);
+  jets_phi = &v_jets_phi;
   tree.Branch("jets_csv", &jets_csv);
+  jets_csv = &v_jets_csv;
   tree.Branch("lep_pt", &lep_pt);
+  lep_pt = &v_lep_pt;
   tree.Branch("lep_eta", &lep_eta);
+  lep_eta = &v_lep_eta;
   tree.Branch("lep_phi", &lep_phi);
+  lep_phi = &v_lep_phi;
   tree.Branch("lep_reliso", &lep_reliso);
+  lep_reliso = &v_lep_reliso;
   tree.Branch("lep_tru_dr", &lep_tru_dr);
+  lep_tru_dr = &v_lep_tru_dr;
   isReadOnly = false;
 }
 
