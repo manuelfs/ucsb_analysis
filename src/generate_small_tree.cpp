@@ -15,6 +15,8 @@ int main(){
   variables.push_back("int nvel");
   variables.push_back("int nmu");
   variables.push_back("int nvmu");
+  variables.push_back("int npv");
+  variables.push_back("int ntrupv");
   variables.push_back("vector<int>* trigger");
   variables.push_back("vector<int>* njets");  // Number of jets for different pT thresholds
   variables.push_back("vector<int>* nbt");    // Number of tight b-tags for different pT thresholds
@@ -37,7 +39,7 @@ int main(){
   variables.push_back("float spher");
   variables.push_back("float spher_jets");
   variables.push_back("float spher_nolin");
-  variables.push_back("float ntrupv");  // Thinking about casting it into an int
+  variables.push_back("float ntrupv_mean");  
   variables.push_back("vector<double>* jets_pt");
   variables.push_back("vector<double>* jets_eta");
   variables.push_back("vector<double>* jets_phi");

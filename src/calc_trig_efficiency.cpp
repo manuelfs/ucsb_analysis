@@ -64,7 +64,7 @@ int main(int argc, char *argv[]){
   }
 
   cout<<"Opening "<<inFilename<<endl;
-  ra4_handler tHandler(inFilename, false, isfast); 
+  ra4_handler tHandler(inFilename, isfast); 
   
   if(Nentries > tHandler.GetTotalEntries() || Nentries < 0) Nentries = tHandler.GetTotalEntries();
 

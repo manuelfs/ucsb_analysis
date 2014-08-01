@@ -30,7 +30,7 @@ $(EXEDIR)/generate_small_tree.exe: generate_small_tree.o
 
 $(MAKEDIR)/%.d: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -MM -MG -MF $@ $< 
-	sed -i'' 's#$*.o#$(OBJDIR)/$*.o $(MAKEDIR)/$*.d#g' $@
+	perl -pi -e 's|$*.o|$(OBJDIR)/$*.o $(MAKEDIR)/$*.d|g' $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -c $<

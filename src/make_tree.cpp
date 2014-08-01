@@ -14,9 +14,9 @@ int main(int argc, char *argv[]){
 
   std::string inFilename("");
   std::string masspoint("");
-  bool iscfA(true), isfast(true);
+  bool isfast(true);
   int c(0), Nentries(0);
-  while((c=getopt(argc, argv, "n:i:m:cf"))!=-1){
+  while((c=getopt(argc, argv, "n:i:m:f"))!=-1){
     switch(c){
     case 'n':
       Nentries=atoi(optarg);
@@ -27,39 +27,22 @@ int main(int argc, char *argv[]){
     case 'm':
       masspoint=optarg;
       break;
-    case 'c':
-      iscfA=false;
-      break;
     case 'f':
       isfast=false;
       break;
     }
   }
 
-  std::string outFilename("");
-  if(iscfA){
-    outFilename="root/"+inFilename+"_"+masspoint+".root";
-    inFilename="/net/cms2/cms2r0/cfA/"+inFilename+"/cfA_*"+masspoint+"*.root";
-  }else{
-    std::string baseName(inFilename);
-    size_t pos(baseName.find(".root"));
-    if(pos!=std::string::npos){
-      baseName.erase(pos);
-    }
-    pos=baseName.rfind("/");
-    if(pos!=std::string::npos){
-      if(pos!=baseName.size()-1){
-	baseName.erase(0,pos+1);
-      }else{
-	baseName.append("file_name_ended_with_slash");
-      }
-    }
-    outFilename="root/"+baseName+".root";
-    //cout << inFilename << "\n" << baseName << "\n" << outFilename << "\n";
+  size_t pos(inFilename.find(".root"));
+  if(pos==std::string::npos){
+    inFilename = inFilename + "*.root";
   }
+  TString outFilename(inFilename);
+  outFilename.Remove(0,outFilename.Last('/')+1);
+  outFilename = "out/small_"+outFilename;
 
   cout<<"Opening "<<inFilename<<endl;
-  ra4_handler tHandler(inFilename, false, isfast); 
+  ra4_handler tHandler(inFilename, isfast); 
   
   if(Nentries > tHandler.GetTotalEntries() || Nentries < 0) Nentries = tHandler.GetTotalEntries();
 

@@ -23,6 +23,8 @@ public:
   int nvel;
   int nmu;
   int nvmu;
+  int npv;
+  int ntrupv;
   vector<int>* trigger;
   vector<int> v_trigger;
   vector<int>* njets;
@@ -53,7 +55,7 @@ public:
   float spher;
   float spher_jets;
   float spher_nolin;
-  float ntrupv;
+  float ntrupv_mean;
   vector<double>* jets_pt;
   vector<double> v_jets_pt;
   vector<double>* jets_eta;

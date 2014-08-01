@@ -15,6 +15,8 @@ small_tree::small_tree():
   tree.Branch("nvel", &nvel);
   tree.Branch("nmu", &nmu);
   tree.Branch("nvmu", &nvmu);
+  tree.Branch("npv", &npv);
+  tree.Branch("ntrupv", &ntrupv);
   tree.Branch("trigger", &trigger);
   trigger = &v_trigger;
   tree.Branch("njets", &njets);
@@ -45,7 +47,7 @@ small_tree::small_tree():
   tree.Branch("spher", &spher);
   tree.Branch("spher_jets", &spher_jets);
   tree.Branch("spher_nolin", &spher_nolin);
-  tree.Branch("ntrupv", &ntrupv);
+  tree.Branch("ntrupv_mean", &ntrupv_mean);
   tree.Branch("jets_pt", &jets_pt);
   jets_pt = &v_jets_pt;
   tree.Branch("jets_eta", &jets_eta);
@@ -75,6 +77,8 @@ small_tree::small_tree(TString filename):
   chain.SetBranchAddress("nvel", &nvel);
   chain.SetBranchAddress("nmu", &nmu);
   chain.SetBranchAddress("nvmu", &nvmu);
+  chain.SetBranchAddress("npv", &npv);
+  chain.SetBranchAddress("ntrupv", &ntrupv);
   chain.SetBranchAddress("trigger", &trigger);
   chain.SetBranchAddress("njets", &njets);
   chain.SetBranchAddress("nbt", &nbt);
@@ -97,7 +101,7 @@ small_tree::small_tree(TString filename):
   chain.SetBranchAddress("spher", &spher);
   chain.SetBranchAddress("spher_jets", &spher_jets);
   chain.SetBranchAddress("spher_nolin", &spher_nolin);
-  chain.SetBranchAddress("ntrupv", &ntrupv);
+  chain.SetBranchAddress("ntrupv_mean", &ntrupv_mean);
   chain.SetBranchAddress("jets_pt", &jets_pt);
   chain.SetBranchAddress("jets_eta", &jets_eta);
   chain.SetBranchAddress("jets_phi", &jets_phi);

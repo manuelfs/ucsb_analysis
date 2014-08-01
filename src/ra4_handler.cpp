@@ -28,8 +28,8 @@ const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
 #define NTrigEfficiencies 14
 #define NTrigReduced 19
 
-void ra4_handler::ReduceTree(int Nentries, string outFilename){
-  TFile outFile(outFilename.c_str(), "recreate");
+void ra4_handler::ReduceTree(int Nentries, TString outFilename){
+  TFile outFile(outFilename, "recreate");
   outFile.cd();
   TString energy, SampleName;
   SampleName = ParseSampleName(outFilename, energy);
@@ -144,15 +144,15 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
       tree.v_nbm[ith] = 0;
       tree.v_nbt[ith] = 0;
     }
-    for(uint ijet = 0; ijet<jets_AK5PFclean_pt->size(); ijet++) {
+    for(uint ijet = 0; ijet<jets_AK4_pt->size(); ijet++) {
       if(!isGoodJet(ijet, 30)) continue;
-      pt = jets_AK5PFclean_pt->at(ijet);
-      px = jets_AK5PFclean_px->at(ijet);
-      py = jets_AK5PFclean_py->at(ijet);
+      pt = jets_AK4_pt->at(ijet);
+      px = jets_AK4_px->at(ijet);
+      py = jets_AK4_py->at(ijet);
       tree.v_jets_pt.push_back(pt);
-      tree.v_jets_eta.push_back(jets_AK5PFclean_eta->at(ijet));
-      tree.v_jets_phi.push_back(jets_AK5PFclean_phi->at(ijet));
-      double csv = jets_AK5PFclean_btag_secVertexCombined->at(ijet);
+      tree.v_jets_eta.push_back(jets_AK4_eta->at(ijet));
+      tree.v_jets_phi.push_back(jets_AK4_phi->at(ijet));
+      double csv = jets_AK4_btag_secVertexCombined->at(ijet);
       tree.v_jets_csv.push_back(csv);
       csv_sorted.push_back(make_pair(tree.v_jets_csv.size()-1, csv));
       // Transverse sphericity matrix (not including 1/sum(pt), which cancels in the ratio of eig)
@@ -165,9 +165,9 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
       spher_jets[0][0] += px*px/pt; spher_jets[0][1] += px*py/pt; 
       spher_jets[1][0] += px*py/pt; spher_jets[1][1] += py*py/pt; 
 
-//       cout<<ijet<<": csv "<<csv<<", eta "<<jets_AK5PFclean_eta->at(ijet)<<", phi "<<jets_AK5PFclean_phi->at(ijet)<<endl;
+//       cout<<ijet<<": csv "<<csv<<", eta "<<jets_AK4_eta->at(ijet)<<", phi "<<jets_AK4_phi->at(ijet)<<endl;
       for(int ith(0); ith < nthresh; ith++) {
-	if(jets_AK5PFclean_pt->at(ijet) >= pt_thresh[ith]) {
+	if(jets_AK4_pt->at(ijet) >= pt_thresh[ith]) {
 	  tree.v_njets[ith]++;
 	  if(csv >= CSVCuts[0]) tree.v_nbl[ith]++;
 	  if(csv >= CSVCuts[1]) tree.v_nbm[ith]++;
@@ -301,9 +301,9 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
 
 
     ////////////////   METS   ////////////////
-    tree.met = pfTypeImets_et->at(0);
-    tree.met_phi = pfTypeImets_phi->at(0);
-    tree.metsig = pfmets_fullSignif;
+    tree.met = mets_et->at(0);
+    tree.met_phi = mets_phi->at(0);
+    tree.metsig = -1; // Undefined in new cfA
     // Setting up online MET
     int index_onmet(-1);
     for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
@@ -322,8 +322,8 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     tree.mt = -999.; tree.dphi_wlep = -999.;
     if(lepmax_pt > 0){
       double lepmax_phi = atan2(lepmax_py, lepmax_px);
-      double Wx = pfTypeImets_ex->at(0) + lepmax_px;
-      double Wy = pfTypeImets_ey->at(0) + lepmax_py;
+      double Wx = mets_ex->at(0) + lepmax_px;
+      double Wy = mets_ey->at(0) + lepmax_py;
       tree.dphi_wlep = abs(atan2(Wy,Wx)-lepmax_phi);
       if(tree.dphi_wlep > PI) tree.dphi_wlep = 2*PI-tree.dphi_wlep;
       tree.mt = sqrt(2*lepmax_pt* tree.met*(1-cos(tree.met_phi-lepmax_phi)));
@@ -333,10 +333,12 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     ////////////////   Pile-up   ////////////////
     for(unsigned int bc(0); bc<PU_bunchCrossing->size(); ++bc){
       if(PU_bunchCrossing->at(bc)==0){
-	tree.ntrupv = PU_TrueNumInteractions->at(bc);
+	tree.ntrupv = PU_NumInteractions->at(bc);
+	tree.ntrupv_mean = PU_TrueNumInteractions->at(bc);
 	break;
       }
     }
+    tree.npv = Npv;
     ////////////////   Weights   ////////////////
     tree.wpu = 1;
     tree.wlumi = 1;
@@ -463,7 +465,7 @@ void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
 
     // Baseline selection
     HtMet[1] = 0;
-    if(pfTypeImets_et->size()>0) HtMet[1] = pfTypeImets_et->at(0);
+    if(mets_et->size()>0) HtMet[1] = mets_et->at(0);
     vector<int> signal_electrons = GetElectrons();
     vector<int> veto_electrons = GetElectrons(false);
     vector<int> signal_muons = GetMuons();
@@ -658,17 +660,16 @@ bool ra4_handler::passedBaseMuonSelection(uint imu){
   if(imu >= mus_pt->size()) return false;
 
   float d0PV = mus_tk_d0dum->at(imu)-pv_x->at(0)*sin(mus_tk_phi->at(imu))+pv_y->at(0)*cos(mus_tk_phi->at(imu));
-  int pfIdx=-1;
   
-  //   cout<<"Muon "<<imu<<" => global "<<mus_isGlobalMuon->at(imu)<<", isPFMuon "<< mus_isPFMuon->at(imu)
+  //   cout<<"Muon "<<imu<<" => global "<<mus_isGlobalMuon->at(imu)<<", isPFMuon "<< mus_isPF->at(imu)
   //        <<", GlobalMuonPromptTight "<< mus_id_GlobalMuonPromptTight->at(imu)
   //        <<", LayersWithMeasurement "<< mus_tk_LayersWithMeasurement->at(imu)<<", numvalPixelhits "<< mus_tk_numvalPixelhits->at(imu)
   //        <<", numberOfMatchedStations "<<mus_numberOfMatchedStations->at(imu) <<", dB "<< mus_dB->at(imu)
   //        <<", pt "<< mus_pt->at(imu)<<", MuonPTThreshold "<< MuonPTThreshold
   //        <<", eta "<< mus_eta->at(imu)
-  //        <<", hasPFMatch "<< hasPFMatch(imu, particleId::muon, pfIdx)<<", tk_vx "<< mus_tk_vx->at(imu)<<endl;
+  //        <<", tk_vx "<< mus_tk_vx->at(imu)<<endl;
   return (mus_isGlobalMuon->at(imu) > 0
-	  && mus_isPFMuon->at(imu) > 0
+	  && mus_isPF->at(imu)
 	  && mus_id_GlobalMuonPromptTight->at(imu)> 0 
 	  && mus_tk_LayersWithMeasurement->at(imu) > 5
 	  && mus_tk_numvalPixelhits->at(imu) > 0
@@ -678,7 +679,6 @@ bool ra4_handler::passedBaseMuonSelection(uint imu){
 	  && fabs(getDZ(mus_tk_vx->at(imu), mus_tk_vy->at(imu), mus_tk_vz->at(imu), mus_tk_px->at(imu), 
 			mus_tk_py->at(imu), mus_tk_pz->at(imu), 0)) < 0.5
 	  && mus_pt->at(imu) >= MuonPTThreshold
-	  && hasPFMatch(imu, particleId::muon, pfIdx)
 	  && fabs(mus_eta->at(imu)) <= 2.4);
 }
 
@@ -695,7 +695,7 @@ bool ra4_handler::passedMuonVetoSelection(uint imu){
   float relIso = GetMuonIsolation(imu);
   
   return ((mus_isGlobalMuon->at(imu) >0 || mus_isTrackerMuon->at(imu) >0)
-	  && mus_isPFMuon->at(imu) > 0
+	  && mus_isPF->at(imu) 
 	  && fabs(getDZ(mus_tk_vx->at(imu), mus_tk_vy->at(imu), mus_tk_vz->at(imu), mus_tk_px->at(imu), 
 			mus_tk_py->at(imu), mus_tk_pz->at(imu), 0)) < 0.5 
 	  && mus_pt->at(imu) >= MuonVetoPTThreshold
@@ -704,10 +704,8 @@ bool ra4_handler::passedMuonVetoSelection(uint imu){
 }
 
 float ra4_handler::GetElectronIsolation(uint iel){
-  double sumEt = els_PFphotonIsoR03->at(iel) + els_PFneutralHadronIsoR03->at(iel) 
-    - rho_kt6PFJetsForIsolation2011 * GetEffectiveArea(els_scEta->at(iel), IsMC());
-  if(sumEt<0.0) sumEt=0;
-  return (els_PFchargedHadronIsoR03->at(iel) + sumEt)/els_pt->at(iel);
+  float absiso = els_pfIsolationR03_sumChargedHadronPt->at(iel) + std::max(0.0 , els_pfIsolationR03_sumNeutralHadronEt->at(iel) + els_pfIsolationR03_sumPhotonEt->at(iel) - 0.5 * els_pfIsolationR03_sumPUPt->at(iel) );
+  return absiso/els_pt->at(iel);
 }
 
 bool ra4_handler::passedBaseElectronSelection(uint iel){
@@ -716,18 +714,16 @@ bool ra4_handler::passedBaseElectronSelection(uint iel){
   //   cout<<"pt "<<els_pt->at(iel)<<", thresh "<<ElectronPTThreshold<<", eta "<<els_scEta->at(iel)
   //       <<", conversion "<<els_hasMatchedConversion->at(iel)<<endl;
   float d0PV = els_d0dum->at(iel)-pv_x->at(0)*sin(els_tk_phi->at(iel))+pv_y->at(0)*cos(els_tk_phi->at(iel));
-  int pfIdx=-1;
   
   //   cout<<"pt "<<els_pt->at(iel)<<", thresh "<<ElectronPTThreshold<<", eta "<<els_scEta->at(iel)
   //       <<", conversion "<<els_hasMatchedConversion->at(iel)<<endl;
   return (els_pt->at(iel) > ElectronPTThreshold
 	  && fabs(els_scEta->at(iel)) < 2.5
-	  && !els_hasMatchedConversion->at(iel)
+	  //&& !els_hasMatchedConversion->at(iel)
 	  && els_n_inner_layer->at(iel) <= 1
 	  && fabs(getDZ(els_vx->at(iel), els_vy->at(iel), els_vz->at(iel), cos(els_tk_phi->at(iel))*els_tk_pt->at(iel), 
 			sin(els_tk_phi->at(iel))*els_tk_pt->at(iel), els_tk_pz->at(iel), 0)) < 0.1
 	  && fabs(1./els_caloEnergy->at(iel) - els_eOverPIn->at(iel)/els_caloEnergy->at(iel)) < 0.05 
-	  && hasPFMatch(iel, particleId::electron, pfIdx) 
 	  && fabs(d0PV) < 0.02 
 	  && ((els_isEB->at(iel) // Endcap selection
 	       && fabs(els_dEtaIn->at(iel)) < 0.004
@@ -774,67 +770,6 @@ bool ra4_handler::passedElectronVetoSelection(uint iel){
 }
 
 
-float ra4_handler::GetEffectiveArea(float SCEta, bool isMC){
-  float EffectiveArea;
-
-  if(isMC) {
-    if (fabs(SCEta) >= 0.0 && fabs(SCEta) < 1.0 ) EffectiveArea = 0.110;
-    if (fabs(SCEta) >= 1.0 && fabs(SCEta) < 1.479 ) EffectiveArea = 0.130;
-    if (fabs(SCEta) >= 1.479 && fabs(SCEta) < 2.0 ) EffectiveArea = 0.089;
-    if (fabs(SCEta) >= 2.0 && fabs(SCEta) < 2.2 ) EffectiveArea = 0.130;
-    if (fabs(SCEta) >= 2.2 && fabs(SCEta) < 2.3 ) EffectiveArea = 0.150;
-    if (fabs(SCEta) >= 2.3 && fabs(SCEta) < 2.4 ) EffectiveArea = 0.160;
-    if (fabs(SCEta) >= 2.4) EffectiveArea = 0.190;
-  }
-  else {
-    //kEleGammaAndNeutralHadronIso03 from 2011 data
-    //obtained from http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/UserCode/EGamma/EGammaAnalysisTools/interface/ElectronEffectiveArea.h?revision=1.3&view=markup
-    if (fabs(SCEta) >= 0.0 && fabs(SCEta) < 1.0 ) EffectiveArea = 0.100;
-    if (fabs(SCEta) >= 1.0 && fabs(SCEta) < 1.479 ) EffectiveArea = 0.120;
-    if (fabs(SCEta) >= 1.479 && fabs(SCEta) < 2.0 ) EffectiveArea = 0.085;
-    if (fabs(SCEta) >= 2.0 && fabs(SCEta) < 2.2 ) EffectiveArea = 0.110;
-    if (fabs(SCEta) >= 2.2 && fabs(SCEta) < 2.3 ) EffectiveArea = 0.120;
-    if (fabs(SCEta) >= 2.3 && fabs(SCEta) < 2.4 ) EffectiveArea = 0.120;
-    if (fabs(SCEta) >= 2.4) EffectiveArea = 0.130;
-  }
-  return EffectiveArea;
-}
-
-bool ra4_handler::hasPFMatch(int index, particleId::leptonType type, int &pfIdx){
-  double deltaRVal = 999.;
-  double deltaPT = 999.;
-  double leptonEta = 0, leptonPhi = 0, leptonPt = 0;
-  if(type == particleId::muon ) {
-    leptonEta = mus_eta->at(index);
-    leptonPhi = mus_phi->at(index);
-    leptonPt = mus_pt->at(index);
-  }  else if(type == particleId::electron) {
-    leptonEta = els_scEta->at(index);
-    leptonPhi = els_phi->at(index);
-    leptonPt = els_pt->at(index);
-  }
-  
-  for(unsigned iCand=0; iCand<pfcand_pt->size(); iCand++) {
-    //     cout<<"Repetition "<<iCand<<": particleId "<<pfcand_particleId->at(iCand)
-    // 	<<", deltaRVal "<<deltaRVal<<", deltaPT "<<deltaPT
-    // 	<<", eta "<<pfcand_eta->at(iCand)<<", phi "<<pfcand_phi->at(iCand)<<endl;
-    if(pfcand_particleId->at(iCand)==type) {
-      double tempDeltaR = dR(leptonEta, pfcand_eta->at(iCand), leptonPhi, pfcand_phi->at(iCand));
-      if(tempDeltaR < deltaRVal) {
-	deltaRVal = tempDeltaR;
-	deltaPT = fabs(leptonPt-pfcand_pt->at(iCand));
-	pfIdx=iCand;
-      }
-    }
-  }
- 
-  //   cout<<"Lepton "<<index<<" => type "<<type
-  //       <<", leptonEta "<< leptonEta<<", leptonPhi "<< leptonPhi
-  //       <<", leptonPt "<< leptonPt<<", deltaPT "<< deltaPT<<endl;
-  if(type == particleId::electron) return (deltaPT<10);
-  else return (deltaPT<5);
-}
-
 double ra4_handler::getDZ(double vx, double vy, double vz, double px, double py, double pz, int firstGoodVertex){
   return vz - pv_z->at(firstGoodVertex) -((vx-pv_x->at(firstGoodVertex))*px+(vy-pv_y->at(firstGoodVertex))*py)*pz/(px*px+py*py); 
 }
@@ -842,75 +777,75 @@ double ra4_handler::getDZ(double vx, double vy, double vz, double px, double py,
 vector<int> ra4_handler::GetJets(vector<int> SigEl, vector<int> SigMu, vector<int> VetoEl, vector<int> VetoMu, float &HT){
   vector<int> jets;
   HT = 0;
-  for(uint ijet = 0; ijet<jets_AK5PFclean_pt->size(); ijet++) {
+  for(uint ijet = 0; ijet<jets_AK4_pt->size(); ijet++) {
     if(!isGoodJet(ijet)) continue;
     double tmpdR;
     bool useJet = true;
     for(uint index = 0; index < SigEl.size(); index++) {
-      tmpdR = dR(jets_AK5PFclean_eta->at(ijet), els_eta->at(SigEl[index]),
-		 jets_AK5PFclean_phi->at(ijet), els_phi->at(SigEl[index]));	
+      tmpdR = dR(jets_AK4_eta->at(ijet), els_eta->at(SigEl[index]),
+		 jets_AK4_phi->at(ijet), els_phi->at(SigEl[index]));	
       if(tmpdR < 0.3){useJet = false; break;}
     }      
     if(!useJet) continue;
     for(uint index = 0; index < SigMu.size();index++) {
-      tmpdR = dR(jets_AK5PFclean_eta->at(ijet), mus_eta->at(SigMu[index]),
-		 jets_AK5PFclean_phi->at(ijet), mus_phi->at(SigMu[index]));
+      tmpdR = dR(jets_AK4_eta->at(ijet), mus_eta->at(SigMu[index]),
+		 jets_AK4_phi->at(ijet), mus_phi->at(SigMu[index]));
 	
       if(tmpdR < 0.1){useJet = false; break;}
     }
     if(!useJet) continue;
     for(uint index = 0; index < VetoEl.size(); index++) {
-      tmpdR = dR(jets_AK5PFclean_eta->at(ijet), els_eta->at(VetoEl[index]),
-		 jets_AK5PFclean_phi->at(ijet), els_phi->at(VetoEl[index]));	
+      tmpdR = dR(jets_AK4_eta->at(ijet), els_eta->at(VetoEl[index]),
+		 jets_AK4_phi->at(ijet), els_phi->at(VetoEl[index]));	
       if(tmpdR < 0.3){useJet = false; break;}
     }      
     if(!useJet) continue;
     for(uint index = 0; index < VetoMu.size();index++) {
-      tmpdR = dR(jets_AK5PFclean_eta->at(ijet), mus_eta->at(VetoMu[index]),
-		 jets_AK5PFclean_phi->at(ijet), mus_phi->at(VetoMu[index]));
+      tmpdR = dR(jets_AK4_eta->at(ijet), mus_eta->at(VetoMu[index]),
+		 jets_AK4_phi->at(ijet), mus_phi->at(VetoMu[index]));
 	
       if(tmpdR < 0.1){useJet = false; break;}
     }
     if(!useJet) continue;
 
-    if(jets_AK5PFclean_pt->at(ijet) > JetPTThresholdHT) HT += jets_AK5PFclean_pt->at(ijet);
-    if(jets_AK5PFclean_pt->at(ijet) > JetPTThresholdNJ) jets.push_back(ijet);
+    if(jets_AK4_pt->at(ijet) > JetPTThresholdHT) HT += jets_AK4_pt->at(ijet);
+    if(jets_AK4_pt->at(ijet) > JetPTThresholdNJ) jets.push_back(ijet);
   } // Loop over jets	    
   return jets;
 }
 
 int ra4_handler::GetNumGoodJets(double ptThresh) const{
   int numGoodJets(0);
-  for(uint ijet(0); ijet<jets_AK5PFclean_pt->size(); ++ijet){
+  for(uint ijet(0); ijet<jets_AK4_pt->size(); ++ijet){
     if(isGoodJet(ijet, ptThresh, 2.4)) ++numGoodJets;
   }
   return numGoodJets;
 }
 
 bool ra4_handler::isGoodJet(const unsigned int ijet, const double ptThresh, const double etaThresh) const{
-  if(jets_AK5PFclean_pt->size()<=ijet) return false;
+  if(jets_AK4_pt->size()<=ijet) return false;
   if(!passedPFJetSelection(ijet)) return false;
-  if(jets_AK5PFclean_pt->at(ijet)<ptThresh || fabs(jets_AK5PFclean_eta->at(ijet))>etaThresh) return false;
+  if(jets_AK4_pt->at(ijet)<ptThresh || fabs(jets_AK4_eta->at(ijet))>etaThresh) return false;
   return true;
 }
 
 bool ra4_handler::passedPFJetSelection(const unsigned int ijet) const{
-  double rawRatio =(jets_AK5PFclean_rawPt->at(ijet)/jets_AK5PFclean_pt->at(ijet)); // Same as jets_AK5PFclean_corrFactorRaw
-  const double jetenergy = jets_AK5PFclean_energy->at(ijet) * rawRatio;
+  double rawRatio =(jets_AK4_rawPt->at(ijet)/jets_AK4_pt->at(ijet)); // Same as jets_AK4_corrFactorRaw
+  const double jetenergy = jets_AK4_energy->at(ijet) * rawRatio;
   double NEF = -999., CEF = -999., NHF=-999., CHF=-999.;
-  double chgMult=jets_AK5PFclean_chg_Mult->at(ijet);
-  double numConst=jets_AK5PFclean_mu_Mult->at(ijet)+jets_AK5PFclean_neutral_Mult->at(ijet)+jets_AK5PFclean_chg_Mult->at(ijet);
+  double chgMult=jets_AK4_chg_Mult->at(ijet);
+  double numConst=jets_AK4_mu_Mult->at(ijet)+jets_AK4_neutral_Mult->at(ijet)+jets_AK4_chg_Mult->at(ijet);
    
   if(jetenergy > 0){
-    NEF = jets_AK5PFclean_neutralEmE->at(ijet)/jetenergy;
-    CEF = jets_AK5PFclean_chgEmE->at(ijet)/jetenergy;
-    NHF = jets_AK5PFclean_neutralHadE->at(ijet)/jetenergy;
-    CHF = jets_AK5PFclean_chgHadE->at(ijet)/jetenergy;   
+    NEF = jets_AK4_neutralEmE->at(ijet)/jetenergy;
+    CEF = jets_AK4_chgEmE->at(ijet)/jetenergy;
+    NHF = jets_AK4_neutralHadE->at(ijet)/jetenergy;
+    CHF = jets_AK4_chgHadE->at(ijet)/jetenergy;   
   }
    
   //    cout<<"Jet "<<ijet<<" => NEF "<<NEF<<", CEF "<< CEF
   //        <<", NHF "<<NHF <<",  CHF "<< CHF<<", chgMult "<< chgMult
-  //        <<", pt "<<jets_AK5PFclean_pt->at(ijet)<<", eta "<<jets_AK5PFclean_eta->at(ijet)
+  //        <<", pt "<<jets_AK4_pt->at(ijet)<<", eta "<<jets_AK4_eta->at(ijet)
   //        <<", numConst "<< numConst<<endl;
   return (NEF < 0.99 && CEF < 0.99 && NHF < 0.99 && CHF > 0 &&
 	  chgMult > 0 && numConst > 1);
@@ -942,41 +877,28 @@ bool ra4_handler::PassesMETCleaningCut() const{
   //       <<", ecalTPfilter "<< ecalTPfilter_decision <<",  trackingfailurefilter"<< trackingfailurefilter_decision 
   //       <<", eebadscfilter "<< eebadscfilter_decision  <<", scrapingVeto_decision "<<scrapingVeto_decision<<endl;
   return cschalofilter_decision
-    && hbhefilter_decision
+    //&& hbhefilter_decision
     && hcallaserfilter_decision 
-    && ecalTPfilter_decision 
+    //&& ecalTPfilter_decision 
     && trackingfailurefilter_decision 
-    && eebadscfilter_decision 
-    && scrapingVeto_decision;
+    && eebadscfilter_decision; 
+  //&& scrapingVeto_decision;
 }
 
 bool ra4_handler::IsMC(){
   return (sampleName.find("Run201") == string::npos);
 }
 
-ra4_handler::ra4_handler(const std::string &fileName, const bool isList, const bool fastMode):
-  cfA(fileName, isList){
+ra4_handler::ra4_handler(const std::string &fileName, const bool fastMode):
+  cfa(fileName){
   if (fastMode) { // turn off unnecessary branches
-    //chainA.SetBranchStatus("triggerobject_*",0);
     //chainA.SetBranchStatus("standalone_t*",0);
-    chainA.SetBranchStatus("L1trigger_*",0);
-    chainA.SetBranchStatus("passprescale*",0);
-    chainA.SetBranchStatus("softjetUp_*",0);
-    chainA.SetBranchStatus("photon_*",0);
-    chainB.SetBranchStatus("Ntcmets",0);
-    chainB.SetBranchStatus("tcmets_*",0);
     chainB.SetBranchStatus("Nphotons",0);
     chainB.SetBranchStatus("photons_*",0);
     chainB.SetBranchStatus("Nmets*",0);
     chainB.SetBranchStatus("taus*",0);
-    chainB.SetBranchStatus("tracks*",0);
-    chainB.SetBranchStatus("mets*",0);
-    //chainB.SetBranchStatus("pfmets*",0);
-    chainB.SetBranchStatus("mets_AK5_et",0);
-    //chainB.SetBranchStatus("mc_*",0);
-    //chainB.SetBranchStatus("Nmc_*",0);
-    chainB.SetBranchStatus("jets_AK5PF_*",0);
-    chainB.SetBranchStatus("Njets_AK5PF",0);
+    chainB.SetBranchStatus("pfcand*",0);
+    chainB.SetBranchStatus("mc_final*",0);
   }
 }
 

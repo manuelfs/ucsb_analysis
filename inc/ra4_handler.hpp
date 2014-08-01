@@ -17,12 +17,12 @@
 
 using namespace std;
 
-class ra4_handler : public cfA{
+class ra4_handler : public cfa{
 public:
-  explicit ra4_handler(const std::string &fileName, const bool isList, const bool fastMode);
+  explicit ra4_handler(const std::string &fileName, const bool fastMode);
 
   // General
-  void ReduceTree(int Nentries, string outFilename);
+  void ReduceTree(int Nentries, TString outFilename);
   void CalTrigEfficiency(int Nentries, string outFilename);
   double getDZ(double vx, double vy, double vz, double px, double py, double pz, int firstGoodVertex);
   bool IsMC();
@@ -46,7 +46,6 @@ public:
   static const int MuonVetoPTThreshold     = 15;
   static const int ElectronPTThreshold     = 20;
   static const int ElectronVetoPTThreshold = 15;
-  bool hasPFMatch(int index, particleId::leptonType type, int &pfIdx);
   bool passedMuonSelection(uint imu);
   bool passedMuonVetoSelection(uint imu);
   bool passedElectronSelection(uint iel);
