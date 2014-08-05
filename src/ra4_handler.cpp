@@ -776,41 +776,54 @@ double ra4_handler::getDZ(double vx, double vy, double vz, double px, double py,
 
 vector<int> ra4_handler::GetJets(vector<int> SigEl, vector<int> SigMu, vector<int> VetoEl, vector<int> VetoMu, float &HT){
   vector<int> jets;
+  vector<bool> jet_is_lepton(jets_AK4_pt->size(), false);
   HT = 0;
+  // Finding jets that contain good leptons
+  for(uint index = 0; index < SigEl.size(); index++) {
+    int ijet = els_jet_ind->at(SigEl[index]);
+    if(ijet >= 0) {jet_is_lepton[ijet] = true;
+    }
+  }
+  for(uint index = 0; index < VetoEl.size(); index++) {
+    int ijet = els_jet_ind->at(VetoEl[index]);
+    if(ijet >= 0) jet_is_lepton[ijet] = true;
+  }
+
+  for(uint index = 0; index < SigMu.size(); index++) {
+    int ijet = mus_jet_ind->at(SigMu[index]);
+    if(ijet >= 0) {jet_is_lepton[ijet] = true;
+    }
+  }
+  for(uint index = 0; index < VetoMu.size(); index++) {
+    int ijet = mus_jet_ind->at(VetoMu[index]);
+    if(ijet >= 0) jet_is_lepton[ijet] = true;
+  }
+
+  // Tau/photon cleaning, and calculation of HT
   for(uint ijet = 0; ijet<jets_AK4_pt->size(); ijet++) {
-    if(!isGoodJet(ijet)) continue;
-    double tmpdR;
+    if(!isGoodJet(ijet) || jet_is_lepton[ijet]) continue;
+
+    double tmpdR, partp, jetp = sqrt(pow(jets_AK4_px->at(ijet),2)+pow(jets_AK4_py->at(ijet),2)+pow(jets_AK4_pz->at(ijet),2));
     bool useJet = true;
-    for(uint index = 0; index < SigEl.size(); index++) {
-      tmpdR = dR(jets_AK4_eta->at(ijet), els_eta->at(SigEl[index]),
-		 jets_AK4_phi->at(ijet), els_phi->at(SigEl[index]));	
-      if(tmpdR < 0.3){useJet = false; break;}
-    }      
-    if(!useJet) continue;
-    for(uint index = 0; index < SigMu.size();index++) {
-      tmpdR = dR(jets_AK4_eta->at(ijet), mus_eta->at(SigMu[index]),
-		 jets_AK4_phi->at(ijet), mus_phi->at(SigMu[index]));
-	
-      if(tmpdR < 0.1){useJet = false; break;}
+    // Tau cleaning: jet rejected if withing deltaR = 0.4 of tau, and momentum at least 60% from tau
+    for(uint index = 0; index < taus_pt->size(); index++) {
+      tmpdR = dR(jets_AK4_eta->at(ijet), taus_eta->at(index), jets_AK4_phi->at(ijet), taus_phi->at(index));	
+      partp = sqrt(pow(taus_px->at(index),2)+pow(taus_py->at(index),2)+pow(taus_pz->at(index),2));
+      if(tmpdR < 0.4 && partp/jetp >= 0.6){useJet = false; break;}
     }
     if(!useJet) continue;
-    for(uint index = 0; index < VetoEl.size(); index++) {
-      tmpdR = dR(jets_AK4_eta->at(ijet), els_eta->at(VetoEl[index]),
-		 jets_AK4_phi->at(ijet), els_phi->at(VetoEl[index]));	
-      if(tmpdR < 0.3){useJet = false; break;}
-    }      
-    if(!useJet) continue;
-    for(uint index = 0; index < VetoMu.size();index++) {
-      tmpdR = dR(jets_AK4_eta->at(ijet), mus_eta->at(VetoMu[index]),
-		 jets_AK4_phi->at(ijet), mus_phi->at(VetoMu[index]));
-	
-      if(tmpdR < 0.1){useJet = false; break;}
+
+    // Photon cleaning: jet rejected if withing deltaR = 0.4 of photon, and momentum at least 60% from photon
+    for(uint index = 0; index < photons_pt->size(); index++) {
+      tmpdR = dR(jets_AK4_eta->at(ijet), photons_eta->at(index), jets_AK4_phi->at(ijet), photons_phi->at(index));	
+      partp = sqrt(pow(photons_px->at(index),2)+pow(photons_py->at(index),2)+pow(photons_pz->at(index),2));
+      if(tmpdR < 0.4 && partp/jetp >= 0.6){useJet = false; break;}
     }
     if(!useJet) continue;
 
     if(jets_AK4_pt->at(ijet) > JetPTThresholdHT) HT += jets_AK4_pt->at(ijet);
     if(jets_AK4_pt->at(ijet) > JetPTThresholdNJ) jets.push_back(ijet);
-  } // Loop over jets	    
+  } // Loop over jets
   return jets;
 }
 
@@ -893,10 +906,9 @@ ra4_handler::ra4_handler(const std::string &fileName, const bool fastMode):
   cfa(fileName){
   if (fastMode) { // turn off unnecessary branches
     //chainA.SetBranchStatus("standalone_t*",0);
-    chainB.SetBranchStatus("Nphotons",0);
-    chainB.SetBranchStatus("photons_*",0);
+    //chainB.SetBranchStatus("photons_*",0);
     chainB.SetBranchStatus("Nmets*",0);
-    chainB.SetBranchStatus("taus*",0);
+    //chainB.SetBranchStatus("taus*",0);
     chainB.SetBranchStatus("pfcand*",0);
     chainB.SetBranchStatus("mc_final*",0);
   }
