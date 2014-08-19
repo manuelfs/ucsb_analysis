@@ -32,7 +32,7 @@ using std::cout;
 using std::endl;
 
 
-void efficiencies(TString filetype = ".eps"){
+void efficiencies(TString filetype = ".eps", bool abseff=true){
   styles style("Standard"); style.setDefaultStyle();
   gStyle->SetHatchesLineWidth(2);
  
@@ -73,7 +73,9 @@ void efficiencies(TString filetype = ".eps"){
   TString VarName[] = {"abs(lep_id)==13&&lep_pt>", "abs(lep_id)==11&&lep_pt>", "met>", "ht>",
 		       "abs(lep_id)==13&&lep_pt>", "abs(lep_id)==11&&lep_pt>", "met>", "ht>"};
   TString Cuts[] = {"1", "1", "1", "1",
-		    allcuts, allcuts, allcuts, allcuts};
+		    allcuts, allcuts, 
+		    "lep_pt>20&&ht>500&&njets[1]>=6&&nbm[1]>=2", 
+		    "lep_pt>20&&met>250&&njets[1]>=6&&nbm[1]>=2"};
   float Range[][2] = {{10, 80}, {10, 80}, {150, 500}, {250, 1000},
 		      {10, 80}, {10, 80}, {150, 500}, {250, 1000}};
   int nBins[] = {35, 35, 35, 75,
@@ -173,27 +175,37 @@ void efficiencies(TString filetype = ".eps"){
     // Normalizing histograms
     maxHisto = -1;
     for(int ene(0); ene < 2; ene++){
-      for(int his(0); his < 2; his++){
-	hFile[var][ene][his]->Scale(100./hFile[var][ene][his]->GetBinContent(1));
+      for(int his(0); his < NHis; his++){
+	if(his==1) continue;
+	if(abseff){
+	  chain[ene][his]->Project("hEntries", "ht", "weight");
+	  hFile[var][ene][his]->Scale(100./hEntries.Integral());	  
+	} else hFile[var][ene][his]->Scale(100./hFile[var][ene][his]->GetBinContent(1));
 	if(maxHisto < hFile[var][ene][his]->GetMaximum()) maxHisto = hFile[var][ene][his]->GetMaximum();
       }
     } // Loop over energies
 
-    leg.Clear(); //leg.SetY1NDC(legY-0.04);
-    for(int his(0); his < 2; his++){
-      for(int ene(0); ene < 2; ene++){
+    leg.Clear(); 
+    leg.SetY1NDC(legY-legH-0.04);
+    leg.SetX1NDC(legX-0.04);
+    for(int ene(0); ene < 2; ene++){
+      for(int his(0); his < NHis; his++){
+	if(his==1) continue;
 	legCaption = legNames[ene][his]; legCaption += energies[ene];
 	legCaption.ReplaceAll("_"," "); legCaption.ReplaceAll(" [n="," @"); 
 	leg.AddEntry(hFile[var][ene][his], legCaption);
 	if(ene==0 && his==0) {
-	  hFile[var][ene][his]->SetTitle("Shape comparison");
-	  hFile[var][ene][his]->SetYTitle("Normalized efficiency (%)");
+	  hFile[var][ene][his]->SetTitle("");
+	  if(abseff) hFile[var][ene][his]->SetYTitle("Total efficiency (%)");
+	  else hFile[var][ene][his]->SetYTitle("Normalized efficiency (%)");
+	  hFile[var][ene][his]->SetMaximum(maxHisto*1.1);
+	  hFile[var][ene][his]->SetMinimum(0);
 	  hFile[var][ene][his]->Draw();
 	} else hFile[var][ene][his]->Draw("same");
       }
     } // Loop over energies
     leg.Draw();
-    line.DrawLine(xcut,0,xcut,maxHisto*2);
+    line.DrawLine(xcut,0,xcut,maxHisto*1.1);
     arrow.DrawArrow(xcut,maxHisto,xcut+0.04*(Range[var][1]-Range[var][0]),maxHisto);
     if(VarName[var]=="nel+nmu"){
       line.DrawLine(2,0,2,maxHisto);
@@ -202,12 +214,10 @@ void efficiencies(TString filetype = ".eps"){
     Pname = "plots/nolog/shapes_"; Pname += var;  Pname += tags[var]; Pname += filetype;
     Pname.ReplaceAll("[","_"); Pname.ReplaceAll("]",""); Pname.ReplaceAll("+","-"); 
     can.SetLogy(0);    
-    hFile[var][0][0]->SetMaximum(maxHisto*1.2);
-    if(VarName[var]=="ntrupv") hFile[var][0][0]->SetMaximum(100);
     can.SaveAs(Pname);
-    can.SetLogy(1);
     hFile[var][0][0]->SetMinimum(0.1);
     hFile[var][0][0]->SetMaximum(maxHisto*4);
+    can.SetLogy(1);
     if(VarName[var]=="ht") hFile[var][0][0]->SetMaximum(maxHisto*15);
     Pname.ReplaceAll(filetype, logtag); Pname.ReplaceAll("nolog/", "");
     can.SaveAs(Pname);
@@ -222,29 +232,40 @@ void efficiencies(TString filetype = ".eps"){
   }
 }
 
-void TableYields(TString cuts, TChain *chain[2][4], TString tag1, TString tag2, ofstream &file ){
+void TableYields(TString cuts, TChain *chain[2][4], TString tag1, TString tag2, ofstream &file, int iene){
   TString wcuts = "weight*("; wcuts += cuts; wcuts += ")";
-  double yield[2][NHis];
+  double yield[2][NHis], totalyield[2][NHis];
   TString Hname = "histo";
   TH1F *histo = new TH1F(Hname, "",100, 0, 10000);
-  for(int ene(0); ene < 2; ene++){
+  for(int ene(iene); ene < 2; ene++){
     for(int his(0); his < NHis; his++){
       chain[ene][his]->Project(Hname, "met", wcuts);
       yield[ene][his] = histo->Integral();
+      chain[ene][his]->Project(Hname, "met", "weight");
+      totalyield[ene][his] = histo->Integral();
     }
   }
   histo->Delete();
-  TString samples[] = {"$t\\bar{t}$    ", "T1ttt(1150,500)", "T1ttt(1500,0)  ", "T1ttt(1500,500)"};
-  file << "\n\\begin{tabular}{l | rr | rr} \\hline\\hline\n"<<tag1<<" & \\multicolumn{2}{c|}{\\bf{\\underline{8 TeV}}} "
-       <<"\n& \\multicolumn{2}{c}{\\bf{\\underline{13 TeV}}} \\\\"<<endl
-       <<tag2<<" & \\multicolumn{1}{c}{$N$} & \\multicolumn{1}{c|}{$S/\\sqrt{B}$}"<<endl
-       <<"& \\multicolumn{1}{c}{$N$} & \\multicolumn{1}{c}{$S/\\sqrt{B}$} \\\\ \\hline"<<endl;
+  TString samples[] = {"$t\\bar{t}(\\epsilon\\times1000)$", "T1ttt(1150,500)", 
+		       "T1ttt(1500,0)  ", "T1ttt(1500,1150)"};
+  file << "\n\\begin{tabular}{l | rrr";
+  if(iene==0) file <<"| rrr";
+  file <<"}\\hline\\hline\n"<<tag1;
+  if(iene==0) file <<" & \\multicolumn{3}{c|}{\\bf{\\underline{8 TeV}}} "<<endl;
+  file <<"& \\multicolumn{3}{c}{\\bf{\\underline{13 TeV}}} \\\\"<<endl<<tag2;
+  if(iene==0) file <<" & \\multicolumn{1}{c}{$N$} & \\multicolumn{1}{c}{$\\epsilon (\\%)$} "
+		   <<"& \\multicolumn{1}{c|}{$S/\\sqrt{B}$}"<<endl;
+  file <<"& \\multicolumn{1}{c}{$N$} & \\multicolumn{1}{c}{$\\epsilon (\\%)$} "
+       <<"& \\multicolumn{1}{c}{$S/\\sqrt{B}$} \\\\ \\hline"<<endl;
   for(int his(0); his < NHis; his++){
     file<<samples[his];
-    for(int ene(0); ene < 2; ene++){
-      file<<" \t& "<< RoundNumber(yield[ene][his],0)<<" & ";
-      if(his>0) file<< RoundNumber(yield[ene][his],2, sqrt(yield[ene][0]));
-      else file<<" -";
+    for(int ene(iene); ene < 2; ene++){
+      file<<" \t& "<< RoundNumber(yield[ene][his],0);
+      if(his==0) {
+	cout<<"tt "<<RoundNumber(yield[ene][his],0)<<" for "<<cuts<<endl;
+	file<<" \t& "<< RoundNumber(yield[ene][his]*100000,1, totalyield[ene][his])<<" & -";
+      } else file<<" \t& "<< RoundNumber(yield[ene][his]*100,1, totalyield[ene][his])<<" & "
+		 << RoundNumber(yield[ene][his],2, sqrt(yield[ene][0]));
     }
     file<<" \\\\"<<endl;
   }
@@ -257,25 +278,11 @@ void YieldsPrint(){
   TString name = "txt/Yields_8_13_TeV.tex";
   ofstream file(name);
 
-  TableYields("1",chain,"","No cuts",file);
-  TableYields("ht>500",chain,"","$H_T>500$",file);
-  TableYields("met>450",chain,"","$E^{\\rm miss}_T>450$",file);
-  TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,
-	      "","RA4 cuts",file);
-  TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[3]>=5&&nbm[1]>=2",chain,
-	      "RA4 cuts","$N^{60\\text{ GeV}}_{\\rm jets}\\geq 5$",file);
-  TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[3]>=4&&nbm[1]>=2",chain,
-	      "RA4 cuts","$N^{60\\text{ GeV}}_{\\rm jets}\\geq 4$",file);
-  TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[2]>=5&&nbm[1]>=2",chain,
-	      "RA4 cuts","$N^{50\\text{ GeV}}_{\\rm jets}\\geq 5$",file);
-  TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[2]>=4&&nbm[1]>=2",chain,
-	      "RA4 cuts","$N^{50\\text{ GeV}}_{\\rm jets}\\geq 4$",file);
-  TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>450&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,
-	      "RA4 cuts", "$E^{\\rm miss}_T>450\\text{ GeV}$",file);
-  TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2&&dphi_wlep>1",chain,
-	      "RA4 cuts", "$\\Delta\\phi>1$",file);
-  TableYields("(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2&&mt>100",chain,
-	      "RA4 cuts", "$m_T>100\\text{ GeV}$",file);
+  //TableYields("lep_pt>20&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 cuts",file,0);
+  TableYields("lep_pt>140&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 + $p^\\ell_{T}>140$ GeV",file,1);
+  TableYields("lep_pt>20&&met>435&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"",
+	      "RA4 + $E^{\\text{miss}_{T}>435$ GeV",file,1);
+  TableYields("lep_pt>20&&met>250&&ht>1400&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 + $H_{T}>1400$ GeV",file,1);
   file.close();
   cout<<"Written "<<name<<endl;
 } 
