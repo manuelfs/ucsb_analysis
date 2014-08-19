@@ -45,10 +45,12 @@ public:
   float ht;
   float mt;
   float met;
+  float met_gen;
   float met_phi;
   float dphi_wlep;
   float metsig;
   float onmet;
+  float onmupt;
   float dr_bb;
   float spher;
   float spher_jets;
@@ -64,6 +66,8 @@ public:
   vector<double> v_jets_csv;
   vector<double>* lep_pt;
   vector<double> v_lep_pt;
+  vector<double>* lep_gen_pt;
+  vector<double> v_lep_gen_pt;
   vector<double>* lep_eta;
   vector<double> v_lep_eta;
   vector<double>* lep_phi;

@@ -29,10 +29,12 @@ int main(){
   variables.push_back("float ht");
   variables.push_back("float mt");
   variables.push_back("float met");
+  variables.push_back("float met_gen");
   variables.push_back("float met_phi");
   variables.push_back("float dphi_wlep");
   variables.push_back("float metsig");
   variables.push_back("float onmet");
+  variables.push_back("float onmupt");
   variables.push_back("float dr_bb");
   variables.push_back("float spher");
   variables.push_back("float spher_jets");
@@ -43,6 +45,7 @@ int main(){
   variables.push_back("vector<double>* jets_phi");
   variables.push_back("vector<double>* jets_csv");
   variables.push_back("vector<double>* lep_pt");
+  variables.push_back("vector<double>* lep_gen_pt");
   variables.push_back("vector<double>* lep_eta");
   variables.push_back("vector<double>* lep_phi");
   variables.push_back("vector<double>* lep_reliso");

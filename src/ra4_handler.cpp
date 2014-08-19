@@ -195,6 +195,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     ////////////////   Leptons   ////////////////
     lepmax_pt=0; lepmax_px=0; lepmax_py=0;
     tree.v_lep_pt.resize(0);
+    tree.v_lep_gen_pt.resize(0);
     tree.v_lep_eta.resize(0);
     tree.v_lep_phi.resize(0);
     tree.v_lep_reliso.resize(0);
@@ -212,6 +213,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
       else lepID = pdtlund::e_plus;
       mcID = GetTrueElectron((int)index, mcmomID, deltaR);
       tree.v_lep_pt.push_back(pt);
+      tree.v_lep_gen_pt.push_back(els_gen_pt->at(index));
       tree.v_lep_eta.push_back(els_eta->at(index));
       tree.v_lep_phi.push_back(els_phi->at(index));
       tree.v_lep_reliso.push_back(GetElectronIsolation(index));
@@ -242,6 +244,7 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
       else lepID = pdtlund::mu_plus;
       mcID = GetTrueMuon((int)index, mcmomID, deltaR);
       tree.v_lep_pt.push_back(mus_pt->at(index));
+      tree.v_lep_gen_pt.push_back(mus_gen_pt->at(index));
       tree.v_lep_eta.push_back(mus_eta->at(index));
       tree.v_lep_phi.push_back(mus_phi->at(index));
       tree.v_lep_reliso.push_back(GetMuonIsolation(index));
@@ -300,8 +303,21 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     else tree.spher_nolin = -999.;
 
 
+    // Storing online muon pt
+    int index_onmu(-1);
+    for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
+      trigname = standalone_triggerobject_collectionname->at(tri); 
+      if(trigname.BeginsWith("hltL3MuonCandidates")) {
+	index_onmu = tri;
+	break;
+      }
+    }
+    if(index_onmu >= 0) tree.onmupt = standalone_triggerobject_pt->at(index_onmu);
+    else tree.onmupt = -999;
+
     ////////////////   METS   ////////////////
     tree.met = pfTypeImets_et->at(0);
+    tree.met_gen = pfTypeImets_gen_et->at(0);
     tree.met_phi = pfTypeImets_phi->at(0);
     tree.metsig = pfmets_fullSignif;
     // Setting up online MET
@@ -537,11 +553,24 @@ void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
   cout<<"Finished saving file "<<outFilename<<endl;
 }
 
-void ra4_handler::PrintAllTriggers(string outName){
-  GetEntry(0);
+void ra4_handler::PrintAllTriggers(string outName, int entry){
+  GetEntry(entry);
   ofstream outTrigger(outName.c_str());
   for(unsigned int tri(0); tri < trigger_decision->size(); tri++)
     outTrigger<<trigger_name->at(tri)<<": decision "<<trigger_decision->at(tri)<<", prescale "<<trigger_prescalevalue->at(tri)<<endl;
+  outTrigger<<endl<<endl<<"============== Standalone objects  ============="<<endl;
+  for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
+    TString trigname = standalone_triggerobject_collectionname->at(tri); 
+    outTrigger<<trigname<<" -> pt "<<standalone_triggerobject_pt->at(tri)
+	      <<", offmet "<<pfTypeImets_et->at(0)<<" \tmus pt ";
+    for(uint index=0; index<mus_pt->size(); index++)
+      outTrigger<<index<<" "<<mus_pt->at(index)<<", ";
+    outTrigger<<" \tels pt ";
+    for(uint index=0; index<els_pt->size(); index++)
+      outTrigger<<index<<" "<<els_pt->at(index)<<", ";
+    outTrigger<<endl;
+  }
+
   cout<<"Printed list of triggers in "<<outName.c_str()<<endl;
 }
 

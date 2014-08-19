@@ -1,6 +1,6 @@
 #! /bin/csh
 
-set Nevents=5000000
+set Nevents=5000
 #export Nevents=5000000
 #if (( "$#" >= 1 )); then
 #    export Nevents=$1
@@ -20,6 +20,12 @@ bsub  ./run/make_tree.exe -i SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star
 bsub  ./run/make_tree.exe -i SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-525to1000_25GeVX25GeV_Binning_Summer12-START52_V9_FSIM-v2_AODSIM_UCSB1739reshuf_v68 -n $Nevents  -m 1400_525 | tee log/maketree_8TeV_T1tttt_1400_525.log 
 # Signal @14TeV: 42,376 entries
 bsub  ./run/make_tree.exe -i SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71 -n $Nevents  -m 1500_500 | tee log/maketree_14TeV_T1tttt_1500_500.log 
+
+# Signal @8TeV 1400_1125: 
+bsub ./run/make_tree.exe -i SMS-MadGraph_Pythia6Zstar_8TeV_T1tttt_2J_mGo-1100to1400_mLSP-1025to1200_50GeVX50GeV_Binning_Summer12-START52_V9_FSIM-v1_AODSIM_UCSB1740reshuf_v68 -n $Nevents  -m 1400_1125 | tee log/maketree_8TeV_T1tttt_1400_1125.log 
+# Signal @14TeV 1500_115: 
+bsub  ./run/make_tree.exe -i SMS-T1tttt_2J_mGo-845to3000_mLSP-1to1355_TuneZ2star_14TeV-madgraph-tauola_Summer12-START53_V7C_FSIM_PU_S12-v1_AODSIM_UCSB1949reshuf_v71 -n $Nevents  -m 1500_1155 | tee log/maketree_14TeV_T1tttt_1500_1155.log 
+
 
 # Powheg ttbar @13TeV: 993,322 entries
 bsub  ./run/make_tree.exe -i TTbar_TuneZ2star_13TeV-powheg-tauola_Summer13dr53X-PU25bx25_START53_V19D-v1_AODSIM_UCSB2027_v71 -n $Nevents  | tee log/maketree_13TeV_ttbar_25PU.log 

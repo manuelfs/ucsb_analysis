@@ -15,8 +15,8 @@ int main(int argc, char *argv[]){
   std::string inFilename("");
   std::string masspoint("");
   bool iscfA(true), isfast(true), printTriggers(false);
-  int c(0), Nentries(0);
-  while((c=getopt(argc, argv, "n:i:m:cft"))!=-1){
+  int c(0), Nentries(0), trigentry(0);
+  while((c=getopt(argc, argv, "n:i:m:cft:"))!=-1){
     switch(c){
     case 'n':
       Nentries=atoi(optarg);
@@ -35,6 +35,7 @@ int main(int argc, char *argv[]){
       break;
     case 't':
       printTriggers=true;
+      trigentry=atoi(optarg);
       break;
     }
   }
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]){
   time(&curTime);
   cout<<"Getting started takes "<<difftime(curTime,startTime)<<" seconds. "
       <<"Calculating trigger efficiency with "<<Nentries<<" entries out of "<<tHandler.GetTotalEntries()<<endl;
-  if(printTriggers) tHandler.PrintAllTriggers(outFilename);
+  if(printTriggers) tHandler.PrintAllTriggers(outFilename, trigentry);
   else tHandler.CalTrigEfficiency(Nentries, outFilename);
 
   time(&curTime);
