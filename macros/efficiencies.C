@@ -42,40 +42,14 @@ void efficiencies(TString filetype = ".eps", bool abseff=true){
   TChain *chain[2][NHis];
   ReadChains(chain);
   
-  // Finding yields in trees
-  // vector<float> Ypt
-  // vector<int>* lep_id;
-  // vector<int>* njets;
-  // vector<int>* nbm;
-  // float weight;
-  // float ht;
-  // float met;
-  // vector<double>* lep_pt;
-  // for(int ene(0); ene < 2; ene++){
-  //   for(int his(0); his < NHis; his++){
-  //     chain[ene][his]->SetBranchAddress("weight", &weight);
-  //     chain[ene][his]->SetBranchAddress("ht", &ht);
-  //     chain[ene][his]->SetBranchAddress("met", &met);
-  //     chain[ene][his]->SetBranchAddress("lep_pt", &lep_pt);
-  //     chain[ene][his]->SetBranchAddress("lep_id", &lep_id);
-  //     chain[ene][his]->SetBranchAddress("njets", &njets);
-  //     chain[ene][his]->SetBranchAddress("nbm", &nbm);
-  //     for(int entry(0); entry<chain[ene][his]->GetEntries(); entry++){
-  // 	chain[ene][his]->GetEntry(entry);
-
-  //     }
-  //   }
-  // }
-
   // Variables and cuts
-  //TString allcuts = "(nvel+nvmu)==1&&(nel+nmu)==1&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2";
   TString allcuts = "met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2";
-  TString VarName[] = {"abs(lep_id)==13&&lep_pt>", "abs(lep_id)==11&&lep_pt>", "met>", "ht>",
-		       "abs(lep_id)==13&&lep_pt>", "abs(lep_id)==11&&lep_pt>", "met>", "ht>"};
+  TString VarName[] = {"MaxIf$(lep_pt,abs(lep_id)==13)", "MaxIf$(lep_pt,abs(lep_id)==11)", "met", "ht",
+		       "MaxIf$(lep_pt,abs(lep_id)==13)", "MaxIf$(lep_pt,abs(lep_id)==11)", "met", "ht"};
   TString Cuts[] = {"1", "1", "1", "1",
 		    allcuts, allcuts, 
-		    "lep_pt>20&&ht>500&&njets[1]>=6&&nbm[1]>=2", 
-		    "lep_pt>20&&met>250&&njets[1]>=6&&nbm[1]>=2"};
+		    "Max$(lep_pt)>20&&ht>500&&njets[1]>=6&&nbm[1]>=2", 
+		    "Max$(lep_pt)>20&&met>250&&njets[1]>=6&&nbm[1]>=2"};
   float Range[][2] = {{10, 80}, {10, 80}, {150, 500}, {250, 1000},
 		      {10, 80}, {10, 80}, {150, 500}, {250, 1000}};
   int nBins[] = {35, 35, 35, 75,
@@ -91,7 +65,7 @@ void efficiencies(TString filetype = ".eps", bool abseff=true){
   int fillStyles[2][NHis] = {{3345, 0, 0, 0}, {3354, 0, 0, 0}};
   TString xTitle = "", yTitle = "", Title = "", Pname, Hname, totCut, energies[] = {"_8_TeV", "_13_TeV"};
   TString logtag = "_log"; logtag += filetype;
-  float maxHisto(-1), entries[2][NHis], means[2][NHis];
+  float maxHisto(-1), entries[2][NHis];
   double legX = 0.6, legY = 0.93;
   double legW = 0.12, legH = 0.22;
   TLegend leg(legX, legY-legH, legX+legW, legY);
@@ -114,6 +88,7 @@ void efficiencies(TString filetype = ".eps", bool abseff=true){
       Title = "Expected yields for 19.6 fb^{-1} at #sqrt{s} ="; Title += energies[ene]; 
       Title.ReplaceAll("_"," "); 
       for(int his(0); his < NHis; his++){
+	//Creating histogram
 	Hname = "histo"; Hname += var; Hname += ene; Hname += his;
 	hFile[var][ene][his] = new TH1F(Hname, "", nBins[var], Range[var][0], Range[var][1]);
 	hFile[var][ene][his]->SetLineColor(colors[ene][his]);
@@ -123,18 +98,17 @@ void efficiencies(TString filetype = ".eps", bool abseff=true){
 	hFile[var][ene][his]->SetXTitle(xTitle);
 	hFile[var][ene][his]->SetYTitle(yTitle);
 	hFile[var][ene][his]->SetTitle(Title);
+
+	// Finding yields for different cuts
+	totCut = "weight*(" + VarName[var] + ">";
+	totCut += hFile[var][ene][his]->GetBinLowEdge(1); totCut += "&&";
+	totCut += Cuts[var]; totCut += ")";
+	//cout<<var<<", "<<ene<<", "<<his<<": "<<VarName[var]<<" and cut "<<totCut<<endl;
+	chain[ene][his]->Project(Hname, VarName[var], totCut);
 	for(int bin(1); bin <= nBins[var]; bin++){
-	  totCut = "weight*(" + VarName[var];
-	  totCut += hFile[var][ene][his]->GetBinLowEdge(bin); totCut += "&&";
-	  totCut += Cuts[var]; totCut += ")";
-	  chain[ene][his]->Project("hEntries", "ht", totCut);
-	  hFile[var][ene][his]->SetBinContent(bin, hEntries.Integral());
+	  hFile[var][ene][his]->SetBinContent(bin, hFile[var][ene][his]->Integral(bin, nBins[var]+1));
 	}
-	cout<<ene<<", "<<his<<": "<<totCut<<endl;
 	
-	means[ene][his] = hFile[var][ene][his]->GetMean();
-	double overflow = hFile[var][ene][his]->GetBinContent(nBins[var]+1);
-	hFile[var][ene][his]->SetBinContent(nBins[var], hFile[var][ene][his]->GetBinContent(nBins[var])+overflow);
 	entries[ene][his] = hFile[var][ene][his]->Integral();
 
 	if(maxHisto < hFile[var][ene][his]->GetMaximum()) maxHisto = hFile[var][ene][his]->GetMaximum();
@@ -211,7 +185,7 @@ void efficiencies(TString filetype = ".eps", bool abseff=true){
       line.DrawLine(2,0,2,maxHisto);
       arrow.DrawArrow(2,maxHisto,2-0.04*(Range[var][1]-Range[var][0]),maxHisto);
     }
-    Pname = "plots/nolog/shapes_"; Pname += var;  Pname += tags[var]; Pname += filetype;
+    Pname = "plots/nolog/efficiencies_"; Pname += var;  Pname += tags[var]; Pname += filetype;
     Pname.ReplaceAll("[","_"); Pname.ReplaceAll("]",""); Pname.ReplaceAll("+","-"); 
     can.SetLogy(0);    
     can.SaveAs(Pname);
@@ -278,12 +252,15 @@ void YieldsPrint(){
   TString name = "txt/Yields_8_13_TeV.tex";
   ofstream file(name);
 
-  //TableYields("lep_pt>20&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 cuts",file,0);
-  TableYields("lep_pt>140&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 + $p^\\ell_{T}>140$ GeV",file,1);
-  TableYields("lep_pt>20&&met>435&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"",
-	      "RA4 + $E^{\\text{miss}_{T}>435$ GeV",file,1);
-  TableYields("lep_pt>20&&met>250&&ht>1400&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 + $H_{T}>1400$ GeV",file,1);
+  TableYields("Max$(lep_pt)>20&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 cuts",file,0);
+  TableYields("Max$(lep_pt)>140&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 + $p^\\ell_{T}>140$ GeV",file,1);
+  TableYields("Max$(lep_pt)>20&&met>435&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"",
+   	      "RA4 + $E^\\text{miss}_{T}>435$ GeV",file,1);
+  TableYields("Max$(lep_pt)>20&&met>250&&ht>1400&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 + $H_{T}>1400$ GeV",file,1);
+  TableYields("Max$(lep_pt)>50&&met>350&&ht>850&&njets[1]>=6&&nbm[1]>=2",chain,"RA4 + $p^\\ell_{T}>50$ GeV",
+	      "$E^\\text{miss}_{T}>350$ GeV, $H_{T}>850$ GeV",file,1);
+
   file.close();
   cout<<"Written "<<name<<endl;
-} 
+}
 
