@@ -44,8 +44,8 @@ void efficiencies(TString filetype = ".eps", bool abseff=true){
   
   // Variables and cuts
   TString allcuts = "met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2";
-  TString VarName[] = {"MaxIf$(lep_pt,abs(lep_id)==13)", "MaxIf$(lep_pt,abs(lep_id)==11)", "met", "ht",
-		       "MaxIf$(lep_pt,abs(lep_id)==13)", "MaxIf$(lep_pt,abs(lep_id)==11)", "met", "ht"};
+  TString VarName[] = {"Max$(lep_pt*(abs(lep_id)==13))", "Max$(lep_pt*(abs(lep_id)==11))", "met", "ht",
+		       "Max$(lep_pt*(abs(lep_id)==13))", "Max$(lep_pt*(abs(lep_id)==11))", "met", "ht"};
   TString Cuts[] = {"1", "1", "1", "1",
 		    allcuts, allcuts, 
 		    "Max$(lep_pt)>20&&ht>500&&njets[1]>=6&&nbm[1]>=2", 
@@ -253,12 +253,13 @@ void YieldsPrint(){
   ofstream file(name);
 
   TableYields("Max$(lep_pt)>20&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 cuts",file,0);
-  TableYields("Max$(lep_pt)>140&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 + $p^\\ell_{T}>140$ GeV",file,1);
-  TableYields("Max$(lep_pt)>20&&met>435&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"",
-   	      "RA4 + $E^\\text{miss}_{T}>435$ GeV",file,1);
+  TableYields("Max$(lep_pt)>165&&met>250&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"",
+	      "RA4 + $p^\\ell_{T}>165$ GeV",file,1);
+  TableYields("Max$(lep_pt)>20&&met>440&&ht>500&&njets[1]>=6&&nbm[1]>=2",chain,"",
+   	      "RA4 + $E^\\text{miss}_{T}>440$ GeV",file,1);
   TableYields("Max$(lep_pt)>20&&met>250&&ht>1400&&njets[1]>=6&&nbm[1]>=2",chain,"","RA4 + $H_{T}>1400$ GeV",file,1);
-  TableYields("Max$(lep_pt)>50&&met>350&&ht>850&&njets[1]>=6&&nbm[1]>=2",chain,"RA4 + $p^\\ell_{T}>50$ GeV",
-	      "$E^\\text{miss}_{T}>350$ GeV, $H_{T}>850$ GeV",file,1);
+  TableYields("Max$(lep_pt)>55&&met>350&&ht>900&&njets[1]>=6&&nbm[1]>=2",chain,"RA4 + $p^\\ell_{T}>55$ GeV",
+	      "$E^\\text{miss}_{T}>350$ GeV, $H_{T}>900$ GeV",file,1);
 
   file.close();
   cout<<"Written "<<name<<endl;

@@ -40,20 +40,20 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
   // Setting up desired triggers
   vector <string> triggername;
   TString trigname, trigEffName, word, model;
-  string TriggerName[] = {"Mu17", "Mu40", "Mu40_eta2p1", "Mu40_PFHT350", "Mu40_PFNoPUHT350", "Mu40_PFHT350",  	// 0-6
-			  "PFHT350_Mu15_PFMET45", "PFHT350_Mu15_PFMET45", "PFNoPUHT350_Mu15_PFMET45", 		// 7-9
-			  "PFHT400_Mu5_PFMET45", "PFNoPUHT400_Mu5_PFMET45", 					// 10-11
-			  "Ele80_CaloIdVT_TrkIdT",    "CleanPFHT300_Ele40_CaloIdVT_TrkIdT",  			// 12-13
-			  "CleanPFNoPUHT300_Ele40_CaloIdVT_TrkIdT", 						// 14
-			  "Ele27_WP80", "CleanPFHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET4", 		// 15
-			  "CleanPFNoPUHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45", 			// 16
-			  "CleanPFHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45",  			// 17
-			  "CleanPFNoPUHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"}; 			// 18
+  string TriggerName[] = 
+    {"Mu17", "Mu40", "Mu40_eta2p1", "Mu40_PFHT350", "Mu40_PFNoPUHT350", "Mu40_PFHT350",  // 0-6
+     "PFHT350_Mu15_PFMET45", "PFHT350_Mu15_PFMET45", "PFNoPUHT350_Mu15_PFMET45", 	 // 7-9
+     "PFHT400_Mu5_PFMET45", "PFNoPUHT400_Mu5_PFMET45", 					 // 10-11
+     "Ele80_CaloIdVT_TrkIdT",    "CleanPFHT300_Ele40_CaloIdVT_TrkIdT",  		 // 12-13
+     "CleanPFNoPUHT300_Ele40_CaloIdVT_TrkIdT", 						 // 14
+     "Ele27_WP80", "CleanPFHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET4", 	 // 15
+     "CleanPFNoPUHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45", 		 // 16
+     "CleanPFHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45",  			 // 17
+     "CleanPFNoPUHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"}; 		 // 18
  
   int TriggerIndex[NTrigReduced], AllTriggers(0);
   GetEntry(0);
   model = model_params->c_str();
-//   cout<<model<<endl;
 
   for(int ieff(0); ieff < NTrigReduced; ieff++){
     TriggerIndex[ieff] = -1; 
@@ -63,10 +63,11 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
       trigname = trigger_name->at(tri);
       trigEffName = "HLT_"; trigEffName += triggername[ieff]; trigEffName += "_v";
       if(trigname.Contains(trigEffName)) {
+	if(trigname.Contains("HLT_PFNoPUHT350_v")) cout<<trigname<<" has index "<<ieff<<endl;
 	TriggerIndex[ieff] = tri;
 	break;
       }
-    } // Loop over all trigger in event
+    } // Loop over all triggers in event
     AllTriggers += TriggerIndex[ieff];
   } // Loop over desired triggers
   if(AllTriggers == -NTrigReduced) {
@@ -302,38 +303,49 @@ void ra4_handler::ReduceTree(int Nentries, string outFilename){
     if(eigen2x2(spher_nolin, eig1, eig2)) tree.spher_nolin = 2*eig2/(eig1+eig2);
     else tree.spher_nolin = -999.;
 
-
-    // Storing online muon pt
-    int index_onmu(-1);
-    for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
-      trigname = standalone_triggerobject_collectionname->at(tri); 
-      if(trigname.BeginsWith("hltL3MuonCandidates")) {
-	index_onmu = tri;
-	break;
-      }
-    }
-    if(index_onmu >= 0) tree.onmupt = standalone_triggerobject_pt->at(index_onmu);
-    else tree.onmupt = -999;
-
     ////////////////   METS   ////////////////
     tree.met = pfTypeImets_et->at(0);
     tree.met_gen = pfTypeImets_gen_et->at(0);
     tree.met_phi = pfTypeImets_phi->at(0);
     tree.metsig = pfmets_fullSignif;
+
+    // cout<<endl<<entry<<" ele17 decision "<<tree.v_trigger[0]<<" els: ";
+    // for(uint index=0; index<els_pt->size(); index++)
+    //   cout<<"("<<els_pt->at(index)<<", "<<els_eta->at(index)<<", "<<els_phi->at(index)<<") ";
+    // cout<<endl;
+    ////////////////   Online objects   ////////////////
     // Setting up online MET
-    int index_onmet(-1);
+    int index_onmet(-1), index_onmu(-1), index_onht(-2);
+    bool has_caloiso(false);
+    tree.onelpt = -999;
     for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
       trigname = standalone_triggerobject_collectionname->at(tri); 
-      //cout<<tri<<": "<<trigname<<endl;
       if(trigname.BeginsWith("hltPFMETnoMu")) continue;
       if(trigname.Contains("MuORNoMu")) continue;
-      if(trigname.BeginsWith("hltPFMET")) {
-	index_onmet = tri;
-	break;
+
+      if(index_onmet<0 && trigname.BeginsWith("hltPFMET")) index_onmet = tri;
+      if(index_onmu<0 && trigname.BeginsWith("hltL3MuonCandidates")) index_onmu = tri;
+      if(index_onht<0 && trigname.BeginsWith("hltPFHT") && trigname.Contains("NoPU")){
+	if(index_onht<-1) index_onht++;
+	else index_onht = tri;
+      }
+      if(trigname.Contains("CaloIdTTrkIdVLCaloIsoVLTrkIsoVL")) has_caloiso = true;
+      if((trigname.Contains("3HitElectron") && trigname.Contains("Pixel"))){
+	// cout<<trigname<<" -> ("<<standalone_triggerobject_pt->at(tri)
+	//     <<", "<<standalone_triggerobject_eta->at(tri)
+	//     <<", "<<standalone_triggerobject_phi->at(tri)<<") "<<endl;
+	float sa_elpt(standalone_triggerobject_pt->at(tri));
+	if(sa_elpt > tree.onelpt) tree.onelpt = sa_elpt;
       }
     }
     if(index_onmet >= 0) tree.onmet = standalone_triggerobject_et->at(index_onmet);
     else tree.onmet = -999;
+    if(index_onmu >= 0) tree.onmupt = standalone_triggerobject_pt->at(index_onmu);
+    else tree.onmupt = -999;
+    if(index_onht >= 0) tree.onht = standalone_triggerobject_pt->at(index_onht);
+    else tree.onht = -999;
+    if(!has_caloiso) tree.onelpt = -999;
+
     // Finding mT and deltaPhi with respect to highest pT lepton
     tree.mt = -999.; tree.dphi_wlep = -999.;
     if(lepmax_pt > 0){
@@ -561,13 +573,16 @@ void ra4_handler::PrintAllTriggers(string outName, int entry){
   outTrigger<<endl<<endl<<"============== Standalone objects  ============="<<endl;
   for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
     TString trigname = standalone_triggerobject_collectionname->at(tri); 
-    outTrigger<<trigname<<" -> pt "<<standalone_triggerobject_pt->at(tri)
-	      <<", offmet "<<pfTypeImets_et->at(0)<<" \tmus pt ";
-    for(uint index=0; index<mus_pt->size(); index++)
-      outTrigger<<index<<" "<<mus_pt->at(index)<<", ";
-    outTrigger<<" \tels pt ";
+    outTrigger<<trigname<<" -> ("<<standalone_triggerobject_pt->at(tri)
+	      <<", "<<standalone_triggerobject_eta->at(tri)
+	      <<", "<<standalone_triggerobject_phi->at(tri)<<") ";
+    outTrigger<<" \tels: ";
     for(uint index=0; index<els_pt->size(); index++)
-      outTrigger<<index<<" "<<els_pt->at(index)<<", ";
+      outTrigger<<"("<<els_pt->at(index)<<", "<<els_eta->at(index)<<", "<<els_phi->at(index)<<") ";
+
+    // 	      <<", offmet "<<pfTypeImets_et->at(0)<<" \tmus pt ";
+    // for(uint index=0; index<mus_pt->size(); index++)
+    //   outTrigger<<index<<" "<<mus_pt->at(index)<<", ";
     outTrigger<<endl;
   }
 

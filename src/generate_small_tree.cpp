@@ -34,7 +34,9 @@ int main(){
   variables.push_back("float dphi_wlep");
   variables.push_back("float metsig");
   variables.push_back("float onmet");
+  variables.push_back("float onht");
   variables.push_back("float onmupt");
+  variables.push_back("float onelpt");
   variables.push_back("float dr_bb");
   variables.push_back("float spher");
   variables.push_back("float spher_jets");
