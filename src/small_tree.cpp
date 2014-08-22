@@ -39,10 +39,14 @@ small_tree::small_tree():
   tree.Branch("ht", &ht);
   tree.Branch("mt", &mt);
   tree.Branch("met", &met);
+  tree.Branch("met_gen", &met_gen);
   tree.Branch("met_phi", &met_phi);
   tree.Branch("dphi_wlep", &dphi_wlep);
   tree.Branch("metsig", &metsig);
   tree.Branch("onmet", &onmet);
+  tree.Branch("onht", &onht);
+  tree.Branch("onmupt", &onmupt);
+  tree.Branch("onelpt", &onelpt);
   tree.Branch("dr_bb", &dr_bb);
   tree.Branch("spher", &spher);
   tree.Branch("spher_jets", &spher_jets);
@@ -58,6 +62,8 @@ small_tree::small_tree():
   jets_csv = &v_jets_csv;
   tree.Branch("lep_pt", &lep_pt);
   lep_pt = &v_lep_pt;
+  tree.Branch("lep_gen_pt", &lep_gen_pt);
+  lep_gen_pt = &v_lep_gen_pt;
   tree.Branch("lep_eta", &lep_eta);
   lep_eta = &v_lep_eta;
   tree.Branch("lep_phi", &lep_phi);
@@ -93,10 +99,14 @@ small_tree::small_tree(TString filename):
   chain.SetBranchAddress("ht", &ht);
   chain.SetBranchAddress("mt", &mt);
   chain.SetBranchAddress("met", &met);
+  chain.SetBranchAddress("met_gen", &met_gen);
   chain.SetBranchAddress("met_phi", &met_phi);
   chain.SetBranchAddress("dphi_wlep", &dphi_wlep);
   chain.SetBranchAddress("metsig", &metsig);
   chain.SetBranchAddress("onmet", &onmet);
+  chain.SetBranchAddress("onht", &onht);
+  chain.SetBranchAddress("onmupt", &onmupt);
+  chain.SetBranchAddress("onelpt", &onelpt);
   chain.SetBranchAddress("dr_bb", &dr_bb);
   chain.SetBranchAddress("spher", &spher);
   chain.SetBranchAddress("spher_jets", &spher_jets);
@@ -107,6 +117,7 @@ small_tree::small_tree(TString filename):
   chain.SetBranchAddress("jets_phi", &jets_phi);
   chain.SetBranchAddress("jets_csv", &jets_csv);
   chain.SetBranchAddress("lep_pt", &lep_pt);
+  chain.SetBranchAddress("lep_gen_pt", &lep_gen_pt);
   chain.SetBranchAddress("lep_eta", &lep_eta);
   chain.SetBranchAddress("lep_phi", &lep_phi);
   chain.SetBranchAddress("lep_reliso", &lep_reliso);

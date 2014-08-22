@@ -26,7 +26,7 @@ public:
   void CalTrigEfficiency(int Nentries, string outFilename);
   double getDZ(double vx, double vy, double vz, double px, double py, double pz, int firstGoodVertex);
   bool IsMC();
-  void PrintAllTriggers(string outFilename);
+  void PrintAllTriggers(string outFilename, int trigentry);
 
   // Cleaning
   bool PassesMETCleaningCut() const;
@@ -42,10 +42,14 @@ public:
   vector<int> GetJets(vector<int> SigEl, vector<int> SigMu, vector<int> VetoEl, vector<int> VetoMu, float &HT);
 
   // Leptons
-  static const int MuonPTThreshold         = 20; // statics cannot be floats
-  static const int MuonVetoPTThreshold     = 15;
-  static const int ElectronPTThreshold     = 20;
-  static const int ElectronVetoPTThreshold = 15;
+  static const int MuonPTThreshold         = 5; // statics cannot be floats
+  static const int MuonVetoPTThreshold     = 5;
+  static const int ElectronPTThreshold     = 5;
+  static const int ElectronVetoPTThreshold = 5;
+//  static const int MuonPTThreshold         = 20; // statics cannot be floats
+//  static const int MuonVetoPTThreshold     = 15;
+//  static const int ElectronPTThreshold     = 20;
+//  static const int ElectronVetoPTThreshold = 15;
   bool passedMuonSelection(uint imu);
   bool passedMuonVetoSelection(uint imu);
   bool passedElectronSelection(uint iel);

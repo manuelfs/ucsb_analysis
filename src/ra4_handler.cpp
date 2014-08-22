@@ -40,20 +40,20 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
   // Setting up desired triggers
   vector <string> triggername;
   TString trigname, trigEffName, word, model;
-  string TriggerName[] = {"Mu17", "Mu40", "Mu40_eta2p1", "Mu40_PFHT350", "Mu40_PFNoPUHT350", "Mu40_PFHT350",  	// 0-6
-			  "PFHT350_Mu15_PFMET45", "PFHT350_Mu15_PFMET45", "PFNoPUHT350_Mu15_PFMET45", 		// 7-9
-			  "PFHT400_Mu5_PFMET45", "PFNoPUHT400_Mu5_PFMET45", 					// 10-11
-			  "Ele80_CaloIdVT_TrkIdT",    "CleanPFHT300_Ele40_CaloIdVT_TrkIdT",  			// 12-13
-			  "CleanPFNoPUHT300_Ele40_CaloIdVT_TrkIdT", 						// 14
-			  "Ele27_WP80", "CleanPFHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET4", 		// 15
-			  "CleanPFNoPUHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45", 			// 16
-			  "CleanPFHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45",  			// 17
-			  "CleanPFNoPUHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"}; 			// 18
+  string TriggerName[] = 
+    {"Mu17", "Mu40", "Mu40_eta2p1", "Mu40_PFHT350", "Mu40_PFNoPUHT350", "Mu40_PFHT350",  // 0-6
+     "PFHT350_Mu15_PFMET45", "PFHT350_Mu15_PFMET45", "PFNoPUHT350_Mu15_PFMET45", 	 // 7-9
+     "PFHT400_Mu5_PFMET45", "PFNoPUHT400_Mu5_PFMET45", 					 // 10-11
+     "Ele80_CaloIdVT_TrkIdT",    "CleanPFHT300_Ele40_CaloIdVT_TrkIdT",  		 // 12-13
+     "CleanPFNoPUHT300_Ele40_CaloIdVT_TrkIdT", 						 // 14
+     "Ele27_WP80", "CleanPFHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET4", 	 // 15
+     "CleanPFNoPUHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45", 		 // 16
+     "CleanPFHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45",  			 // 17
+     "CleanPFNoPUHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"}; 		 // 18
  
   int TriggerIndex[NTrigReduced], AllTriggers(0);
   GetEntry(0);
   model = model_params->c_str();
-//   cout<<model<<endl;
 
   for(int ieff(0); ieff < NTrigReduced; ieff++){
     TriggerIndex[ieff] = -1; 
@@ -304,20 +304,37 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
     tree.met = mets_et->at(0);
     tree.met_phi = mets_phi->at(0);
     tree.metsig = -1; // Undefined in new cfA
+
+    ////////////////   Online objects   ////////////////
     // Setting up online MET
-    int index_onmet(-1);
+    int index_onmet(-1), index_onmu(-1), index_onht(-2);
+    bool has_caloiso(false);
+    tree.onelpt = -999;
     for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
       trigname = standalone_triggerobject_collectionname->at(tri); 
-      //cout<<tri<<": "<<trigname<<endl;
       if(trigname.BeginsWith("hltPFMETnoMu")) continue;
       if(trigname.Contains("MuORNoMu")) continue;
-      if(trigname.BeginsWith("hltPFMET")) {
-	index_onmet = tri;
-	break;
+
+      if(index_onmet<0 && trigname.BeginsWith("hltPFMET")) index_onmet = tri;
+      if(index_onmu<0 && trigname.BeginsWith("hltL3MuonCandidates")) index_onmu = tri;
+      if(index_onht<0 && trigname.BeginsWith("hltPFHT") && trigname.Contains("NoPU")){
+	if(index_onht<-1) index_onht++;
+	else index_onht = tri;
+      }
+      if(trigname.Contains("CaloIdTTrkIdVLCaloIsoVLTrkIsoVL")) has_caloiso = true;
+      if((trigname.Contains("3HitElectron") && trigname.Contains("Pixel"))){
+	float sa_elpt(standalone_triggerobject_pt->at(tri));
+	if(sa_elpt > tree.onelpt) tree.onelpt = sa_elpt;
       }
     }
     if(index_onmet >= 0) tree.onmet = standalone_triggerobject_et->at(index_onmet);
     else tree.onmet = -999;
+    if(index_onmu >= 0) tree.onmupt = standalone_triggerobject_pt->at(index_onmu);
+    else tree.onmupt = -999;
+    if(index_onht >= 0) tree.onht = standalone_triggerobject_pt->at(index_onht);
+    else tree.onht = -999;
+    if(!has_caloiso) tree.onelpt = -999;
+
     // Finding mT and deltaPhi with respect to highest pT lepton
     tree.mt = -999.; tree.dphi_wlep = -999.;
     if(lepmax_pt > 0){
@@ -539,11 +556,24 @@ void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
   cout<<"Finished saving file "<<outFilename<<endl;
 }
 
-void ra4_handler::PrintAllTriggers(string outName){
-  GetEntry(0);
+void ra4_handler::PrintAllTriggers(string outName, int entry){
+  GetEntry(entry);
   ofstream outTrigger(outName.c_str());
   for(unsigned int tri(0); tri < trigger_decision->size(); tri++)
     outTrigger<<trigger_name->at(tri)<<": decision "<<trigger_decision->at(tri)<<", prescale "<<trigger_prescalevalue->at(tri)<<endl;
+  outTrigger<<endl<<endl<<"============== Standalone objects  ============="<<endl;
+  for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
+    TString trigname = standalone_triggerobject_collectionname->at(tri); 
+    outTrigger<<trigname<<" -> ("<<standalone_triggerobject_pt->at(tri)
+	      <<", "<<standalone_triggerobject_eta->at(tri)
+	      <<", "<<standalone_triggerobject_phi->at(tri)<<") ";
+    outTrigger<<" \tels: ";
+    for(uint index=0; index<els_pt->size(); index++)
+      outTrigger<<"("<<els_pt->at(index)<<", "<<els_eta->at(index)<<", "<<els_phi->at(index)<<") ";
+
+    outTrigger<<endl;
+  }
+
   cout<<"Printed list of triggers in "<<outName.c_str()<<endl;
 }
 
