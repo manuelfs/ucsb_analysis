@@ -31,8 +31,6 @@ const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
 void ra4_handler::ReduceTree(int Nentries, TString outFilename){
   TFile outFile(outFilename, "recreate");
   outFile.cd();
-  TString energy, SampleName;
-  SampleName = ParseSampleName(outFilename, energy);
 
   // Reduced tree
   small_tree tree;
@@ -40,20 +38,23 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
   // Setting up desired triggers
   vector <string> triggername;
   TString trigname, trigEffName, word, model;
+  TString energy, SampleName;
   string TriggerName[] = 
-    {"Mu17", "Mu40", "Mu40_eta2p1", "Mu40_PFHT350", "Mu40_PFNoPUHT350", "Mu40_PFHT350",  // 0-6
-     "PFHT350_Mu15_PFMET45", "PFHT350_Mu15_PFMET45", "PFNoPUHT350_Mu15_PFMET45", 	 // 7-9
-     "PFHT400_Mu5_PFMET45", "PFNoPUHT400_Mu5_PFMET45", 					 // 10-11
-     "Ele80_CaloIdVT_TrkIdT",    "CleanPFHT300_Ele40_CaloIdVT_TrkIdT",  		 // 12-13
-     "CleanPFNoPUHT300_Ele40_CaloIdVT_TrkIdT", 						 // 14
-     "Ele27_WP80", "CleanPFHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET4", 	 // 15
+    {"Mu17", "Mu40", "Mu40_eta2p1", "Mu40_PFHT350", "Mu40_PFNoPUHT350", "Mu40_PFHT350",  // 0-5
+     "PFHT350_Mu15_PFMET45", "PFHT350_Mu15_PFMET45", "PFNoPUHT350_Mu15_PFMET45", 	 // 6-8
+     "PFHT400_Mu5_PFMET45", "PFNoPUHT400_Mu5_PFMET45", 					 // 9-10
+     "Ele80_CaloIdVT_TrkIdT",    "CleanPFHT300_Ele40_CaloIdVT_TrkIdT",  		 // 11-12
+     "CleanPFNoPUHT300_Ele40_CaloIdVT_TrkIdT", 						 // 13
+     "Ele27_WP80", "CleanPFHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET4", 	 // 14-15
      "CleanPFNoPUHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45", 		 // 16
      "CleanPFHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45",  			 // 17
      "CleanPFNoPUHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"}; 		 // 18
  
   int TriggerIndex[NTrigReduced], AllTriggers(0);
+  float xsec(0);
   GetEntry(0);
   model = model_params->c_str();
+  SampleName = ParseSampleName(outFilename, model, energy, xsec);
 
   for(int ieff(0); ieff < NTrigReduced; ieff++){
     TriggerIndex[ieff] = -1; 
@@ -74,9 +75,7 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
     return;
   }
 
-  const float luminosity = 19600, xsec_t1tttt_8tev_1145(0.00695169), xsec_t1tttt_13tev_1145(0.121755);
-  const float xsec_t1tttt_8tev_1400(0.0008712), xsec_t1tttt_13tev_1500(0.01461);
-  const float xsec_tt_8tev(245.8), xsec_tt_13tev(818.8);
+  const float luminosity = 19600;
   Float_t pt_thresh[] = {30, 40, 50, 60, 70, 80};
   int nthresh = 6;
   tree.v_njets.resize(nthresh);
@@ -366,16 +365,8 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
 	  tree.wpu = wpu[bin];
 	  break;
 	}
-      if(model.Contains("1150_")) tree.wlumi = xsec_t1tttt_8tev_1145*luminosity / static_cast<double>(Nentries);
-      if(model.Contains("1400_")) tree.wlumi = xsec_t1tttt_8tev_1400*luminosity / static_cast<double>(Nentries);
     } 
-    if(energy == "14" && SampleName == "T1ttt") {
-      if(model.Contains("1145_")) tree.wlumi = xsec_t1tttt_13tev_1145*luminosity / static_cast<double>(Nentries);
-      if(model.Contains("1500_")) tree.wlumi = xsec_t1tttt_13tev_1500*luminosity / static_cast<double>(Nentries);
-    }
-    if(energy == "8" && SampleName == "t#bar{t}") tree.wlumi = xsec_tt_8tev*luminosity / static_cast<double>(Nentries);
-    if(energy == "13" && SampleName == "t#bar{t}") tree.wlumi = xsec_tt_13tev*luminosity / static_cast<double>(Nentries);
-
+    tree.wlumi = xsec*luminosity / static_cast<double>(Nentries);
     tree.weight = tree.wpu*tree.wlumi;
 
     

@@ -34,12 +34,18 @@ int main(int argc, char *argv[]){
   }
 
   size_t pos(inFilename.find(".root"));
-  if(pos==std::string::npos){
-    inFilename = inFilename + "*.root";
-  }
   TString outFilename(inFilename);
-  outFilename.Remove(0,outFilename.Last('/')+1);
-  outFilename = "out/small_"+outFilename;
+  if(pos==std::string::npos){
+    inFilename = inFilename + "/*.root";
+    int len(outFilename.Sizeof());
+    if(outFilename[len-2] == '/') outFilename.Remove(len-2, len-1);
+    outFilename.Remove(0,outFilename.Last('/')+1);
+    outFilename = "out/small_"+outFilename+".root";
+  } else {
+    outFilename.ReplaceAll("/configurableAnalysis","");
+    outFilename.Remove(0,outFilename.Last('/')+1);
+    outFilename = "out/small_"+outFilename;
+  }
 
   cout<<"Opening "<<inFilename<<endl;
   ra4_handler tHandler(inFilename, isfast); 

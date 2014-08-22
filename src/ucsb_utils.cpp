@@ -84,7 +84,7 @@ TString RoundNumber(double num, int decimals, double denom){
   return result;
 }
 
-TString ParseSampleName(TString file, TString &energy){
+TString ParseSampleName(TString file, TString model, TString &energy, float &xsec){
   TString sample = file;
   energy = file;
   if(sample.Contains("2012")){
@@ -97,16 +97,40 @@ TString ParseSampleName(TString file, TString &energy){
     energy.Remove(0, energy.Last('_')+1);
   }
   if(sample.Contains("TT")) sample = "t#bar{t}";
-  if(sample.Contains("SMS")) sample = "T1ttt";
+  if(sample.Contains("T1ttt")) sample = "T1ttt";
+  if(sample.Contains("QCD")) sample = "QCD";
+
+  // Cross sections in pb
+  if(sample=="t#bar{t}") xsec=(energy=="8"?245.8:818.8);
+  if(sample=="T1tttt") {
+    if(energy=="8"){
+      if(model.Contains("1145_")) xsec=0.00695169;
+      if(model.Contains("1400_")) xsec=0.0008712;
+    } else {
+      if(model.Contains("1150_")) xsec=0.121755;
+      if(model.Contains("1500_")) xsec=0.01461;
+    }
+  }
+
+  if(energy=="13"){
+    if(file.Contains("QCD_Pt-5to10"))	   xsec = 80710000000;
+    if(file.Contains("QCD_Pt-10to15"))	   xsec = 7528000000;
+    if(file.Contains("QCD_Pt-15to30"))	   xsec = 2237000000;
+    if(file.Contains("QCD_Pt-30to50"))	   xsec = 161500000;
+    if(file.Contains("QCD_Pt-50to80"))	   xsec = 22110000;
+    if(file.Contains("QCD_Pt-80to120"))	   xsec = 3000114;
+    if(file.Contains("QCD_Pt-120to170"))   xsec = 493200;
+    if(file.Contains("QCD_Pt-170to300"))   xsec = 120300;
+    if(file.Contains("QCD_Pt-300to470"))   xsec = 7475;
+    if(file.Contains("QCD_Pt-470to600"))   xsec = 587.1;
+    if(file.Contains("QCD_Pt-600to800"))   xsec = 167;
+    if(file.Contains("QCD_Pt-800to1000"))  xsec = 28.25;
+    if(file.Contains("QCD_Pt-1000to1400")) xsec = 8.195;
+    if(file.Contains("QCD_Pt-1400to1800")) xsec = 0.7346;
+    if(file.Contains("QCD_Pt-1800to2400")) xsec = 0.102;
+    if(file.Contains("QCD_Pt-2400to3200")) xsec = 0.00644;
+  }
 
   return sample;
 }
 
-TString GetSampleEnergy(TString file, TString &sampleSimple){
-  TString energy;
-  TString sampleName = ParseSampleName(file, energy);
-  sampleSimple = sampleName; sampleSimple += "_"; sampleSimple += energy; sampleSimple += "TeV_";
-  sampleSimple.ReplaceAll(" ", "_");
-  sampleName += " @ "; sampleName += energy; sampleName += " TeV";
-  return sampleName;
-}

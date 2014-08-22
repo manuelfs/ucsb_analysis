@@ -16,8 +16,7 @@ void DivideHistosEff(TH1F* hNum, TH1F* hDen, TH1F* hEff);
 double deltaphi(double phi1, double phi2);
 float dR(float eta1, float phi1, float eta2, float phi2);
 TString RoundNumber(double num, int decimals, double denom=1.);
-TString ParseSampleName(TString file, TString &energy);
-TString GetSampleEnergy(TString file, TString &sampleSimple);
+TString ParseSampleName(TString file, TString model, TString &energy, float &xsec);
 
 namespace particleId {
   enum leptonType { 
