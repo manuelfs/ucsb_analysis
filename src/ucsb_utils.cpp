@@ -99,20 +99,28 @@ TString ParseSampleName(TString file, TString model, TString &energy, float &xse
   if(sample.Contains("TT")) sample = "t#bar{t}";
   if(sample.Contains("T1ttt")) sample = "T1ttt";
   if(sample.Contains("QCD")) sample = "QCD";
+  if(sample.Contains("WJets")) sample = "WJets";
 
   // Cross sections in pb
-  if(sample=="t#bar{t}") xsec=(energy=="8"?245.8:818.8);
-  if(sample=="T1tttt") {
-    if(energy=="8"){
-      if(model.Contains("1145_")) xsec=0.00695169;
-      if(model.Contains("1400_")) xsec=0.0008712;
-    } else {
-      if(model.Contains("1150_")) xsec=0.121755;
-      if(model.Contains("1500_")) xsec=0.01461;
-    }
+  if(energy=="8"){
+    if(file.Contains("T1ttt") && model.Contains("1145_"))  xsec = 0.00695169;
+    if(file.Contains("T1ttt") && model.Contains("1400_"))  xsec = 0.000871201;
+
+    if(file.Contains("TT"))  xsec = 245.8;
   }
 
   if(energy=="13"){
+    if(file.Contains("T1ttt") && model.Contains("1150_"))  xsec = 0.117687;
+    if(file.Contains("T1ttt") && model.Contains("1200_"))  xsec = 0.0856418;
+    if(file.Contains("T1ttt") && model.Contains("1500_"))  xsec = 0.0141903;
+
+    if(file.Contains("TT"))  xsec = 818.8;
+
+    if(file.Contains("WJetsToLNu_HT-100to200"))  xsec = 1817.0;
+    if(file.Contains("WJetsToLNu_HT-200to400"))  xsec = 471.6;
+    if(file.Contains("WJetsToLNu_HT-400to600"))  xsec = 55.61;
+    if(file.Contains("WJetsToLNu_HT-600toInf"))  xsec = 18.81;
+
     if(file.Contains("QCD_Pt-5to10"))	   xsec = 80710000000;
     if(file.Contains("QCD_Pt-10to15"))	   xsec = 7528000000;
     if(file.Contains("QCD_Pt-15to30"))	   xsec = 2237000000;
@@ -129,6 +137,7 @@ TString ParseSampleName(TString file, TString model, TString &energy, float &xse
     if(file.Contains("QCD_Pt-1400to1800")) xsec = 0.7346;
     if(file.Contains("QCD_Pt-1800to2400")) xsec = 0.102;
     if(file.Contains("QCD_Pt-2400to3200")) xsec = 0.00644;
+    if(file.Contains("QCD_Pt-3200"))       xsec = 0.000163;
   }
 
   return sample;

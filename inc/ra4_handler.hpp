@@ -23,10 +23,10 @@ public:
 
   // General
   void ReduceTree(int Nentries, TString outFilename);
-  void CalTrigEfficiency(int Nentries, string outFilename);
+  void CalTrigEfficiency(int Nentries, TString outFilename);
   double getDZ(double vx, double vy, double vz, double px, double py, double pz, int firstGoodVertex);
   bool IsMC();
-  void PrintAllTriggers(string outFilename, int trigentry);
+  void PrintAllTriggers(TString outFilename, int trigentry);
 
   // Cleaning
   bool PassesMETCleaningCut() const;

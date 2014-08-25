@@ -14,9 +14,9 @@ int main(int argc, char *argv[]){
 
   std::string inFilename("");
   std::string masspoint("");
-  bool iscfA(true), isfast(true), printTriggers(false);
+  bool isfast(true), printTriggers(false);
   int c(0), Nentries(0), trigentry(0);
-  while((c=getopt(argc, argv, "n:i:m:cft"))!=-1){
+  while((c=getopt(argc, argv, "n:i:m:ft:"))!=-1){
     switch(c){
     case 'n':
       Nentries=atoi(optarg);
@@ -26,9 +26,6 @@ int main(int argc, char *argv[]){
       break;
     case 'm':
       masspoint=optarg;
-      break;
-    case 'c':
-      iscfA=false;
       break;
     case 'f':
       isfast=false;
@@ -40,28 +37,19 @@ int main(int argc, char *argv[]){
     }
   }
 
-  std::string outFilename("");
-  if(iscfA){
-    if(printTriggers) outFilename="out/Triggers_"+inFilename+"_"+masspoint+".txt";
-    else outFilename="out/"+inFilename+"_"+masspoint+".root";
-    inFilename="/net/cms2/cms2r0/cfA/"+inFilename+"/cfA_*"+masspoint+"*.root";
-  }else{
-    std::string baseName(inFilename);
-    size_t pos(baseName.find(".root"));
-    if(pos!=std::string::npos){
-      baseName.erase(pos);
-    }
-    pos=baseName.rfind("/");
-    if(pos!=std::string::npos){
-      if(pos!=baseName.size()-1){
-	baseName.erase(0,pos+1);
-      }else{
-	baseName.append("file_name_ended_with_slash");
-      }
-    }
-    if(printTriggers) outFilename="out/Triggers_"+baseName+".txt";
-    else outFilename="out/"+baseName+".root";
-    //cout << inFilename << "\n" << baseName << "\n" << outFilename << "\n";
+  size_t pos(inFilename.find(".root"));
+  TString outFilename(inFilename);
+  if(pos==std::string::npos){
+    inFilename = inFilename + "/*.root";
+    int len(outFilename.Sizeof());
+    if(outFilename[len-2] == '/') outFilename.Remove(len-2, len-1);
+    outFilename.Remove(0,outFilename.Last('/')+1);
+    outFilename = "out/Triggers_"+outFilename+".txt";
+  } else {
+    outFilename.ReplaceAll("/configurableAnalysis","");
+    outFilename.Remove(0,outFilename.Last('/')+1);
+    outFilename = "out/Triggers_"+outFilename;
+    outFilename.ReplaceAll(".root",".txt");
   }
 
   cout<<"Opening "<<inFilename<<endl;

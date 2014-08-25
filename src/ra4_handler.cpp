@@ -26,7 +26,7 @@ const std::vector<std::vector<int> > VRunLumi24Aug(MakeVRunLumi("24Aug"));
 const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
 
 #define NTrigEfficiencies 14
-#define NTrigReduced 19
+#define NTrigReduced 12
 
 void ra4_handler::ReduceTree(int Nentries, TString outFilename){
   TFile outFile(outFilename, "recreate");
@@ -40,15 +40,11 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
   TString trigname, trigEffName, word, model;
   TString energy, SampleName;
   string TriggerName[] = 
-    {"Mu17", "Mu40", "Mu40_eta2p1", "Mu40_PFHT350", "Mu40_PFNoPUHT350", "Mu40_PFHT350",  // 0-5
-     "PFHT350_Mu15_PFMET45", "PFHT350_Mu15_PFMET45", "PFNoPUHT350_Mu15_PFMET45", 	 // 6-8
-     "PFHT400_Mu5_PFMET45", "PFNoPUHT400_Mu5_PFMET45", 					 // 9-10
-     "Ele80_CaloIdVT_TrkIdT",    "CleanPFHT300_Ele40_CaloIdVT_TrkIdT",  		 // 11-12
-     "CleanPFNoPUHT300_Ele40_CaloIdVT_TrkIdT", 						 // 13
-     "Ele27_WP80", "CleanPFHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET4", 	 // 14-15
-     "CleanPFNoPUHT300_Ele15_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45", 		 // 16
-     "CleanPFHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45",  			 // 17
-     "CleanPFNoPUHT350_Ele5_CaloIdT_CaloIsoVL_TrkIdT_TrkIsoVL_PFMET45"}; 		 // 18
+    {"Mu5", "Mu24", "Mu40",									// 0-2
+     "Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL", "Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL",	// 3-4
+     "PFNoPUHT350", "PFNoPUHT650", "PFNoPUHT750",						// 5-7
+     "PFMET150", "PFMET180",									// 8-9
+     "PFNoPUHT350_Mu15_PFMET4", "PFNoPUHT400_Mu5_PFMET4"};					// 10-11
  
   int TriggerIndex[NTrigReduced], AllTriggers(0);
   float xsec(0);
@@ -107,7 +103,18 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
     timer.Iterate();
     GetEntry(entry);
 
-    /////////  Calculating branches  /////////
+    ////////////////   Triggers   ////////////////
+    AllTriggers = 0;
+    for(int ieff(0); ieff < NTrigReduced; ieff++){
+      if(TriggerIndex[ieff] >= 0){
+	tree.v_trigger[ieff] = static_cast<int> (trigger_decision->at(TriggerIndex[ieff]));
+	AllTriggers += tree.v_trigger[ieff];
+      } else tree.v_trigger[ieff] = -1;
+    }
+    if(tree.v_trigger[0]==0 && tree.v_trigger[3]==0) continue;
+    // if(AllTriggers == 0) continue; // No desired triggers passed
+
+    ////////////////   Leptons   ////////////////
     vector<int> signal_electrons = GetElectrons();
     vector<int> veto_electrons = GetElectrons(false);
     vector<int> signal_muons = GetMuons();
@@ -119,14 +126,6 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
     tree.nvmu = veto_muons.size();
     if(tree.nel+tree.nmu == tree.nvel+tree.nvmu) tree.nlep = tree.nel+tree.nmu;
     else tree.nlep = -99;
-    AllTriggers = 0;
-    for(int ieff(0); ieff < NTrigReduced; ieff++){
-      if(TriggerIndex[ieff] >= 0){
-	tree.v_trigger[ieff] = static_cast<int> (trigger_decision->at(TriggerIndex[ieff]));
-	AllTriggers += tree.v_trigger[ieff];
-      } else tree.v_trigger[ieff] = -1;
-    }
-//     if(AllTriggers == 0) continue; // No desired triggers passed
 
     ////////////////   Jets   ////////////////
     tree.v_jets_pt.resize(0);
@@ -306,34 +305,60 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
 
     ////////////////   Online objects   ////////////////
     // Setting up online MET
-    int index_onmet(-1), index_onmu(-1), index_onht(-2);
-    bool has_caloiso(false);
-    tree.onelpt = -999;
+    int index_onmet(-1);
+    bool has_caloiso(false), has_ak5nopu(false), has_isomu(false);
+    float sumjetspu(0), sumjets(0), objpt, objeta; // sumjetsl1(0), sumjetscalo(0), 
+    tree.onelpt = -999; tree.onmupt = -999;
     for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
       trigname = standalone_triggerobject_collectionname->at(tri); 
-      if(trigname.BeginsWith("hltPFMETnoMu")) continue;
-      if(trigname.Contains("MuORNoMu")) continue;
-
-      if(index_onmet<0 && trigname.BeginsWith("hltPFMET")) index_onmet = tri;
-      if(index_onmu<0 && trigname.BeginsWith("hltL3MuonCandidates")) index_onmu = tri;
-      if(index_onht<0 && trigname.BeginsWith("hltPFHT") && trigname.Contains("NoPU")){
-	if(index_onht<-1) index_onht++;
-	else index_onht = tri;
+      objpt = standalone_triggerobject_pt->at(tri);
+      objeta = standalone_triggerobject_eta->at(tri);
+      // if(trigname.Contains("hltPFJetsMatchedToCaloJets50") && objpt>40 && objeta<3) sumjetscalo += objpt;
+      // if(trigname.Contains("hltPFJetsL1Matched") && objpt>40 && objeta<3) sumjetsl1 += objpt;
+      if(trigname.Contains("hltAK5PFJetL1FastL2L3Corrected::") && objpt>40 && objeta<3) sumjets += objpt;
+      if(trigname.Contains("hltAK5PFJetL1FastL2L3CorrectedNoPU") && objpt>40 && objeta<3) {
+	has_ak5nopu = true;
+	sumjetspu += objpt;
       }
+      if(index_onmet<0 && trigname.BeginsWith("hltPFMETProducer")) index_onmet = tri;
       if(trigname.Contains("CaloIdTTrkIdVLCaloIsoVLTrkIsoVL")) has_caloiso = true;
-      if((trigname.Contains("3HitElectron") && trigname.Contains("Pixel"))){
-	float sa_elpt(standalone_triggerobject_pt->at(tri));
-	if(sa_elpt > tree.onelpt) tree.onelpt = sa_elpt;
-      }
+      if(trigname.Contains("IsoMu")) has_isomu = true;
+      if(trigname.BeginsWith("hltL3MuonCandidates") && objeta<2.5) 
+	if(objpt > tree.onmupt) tree.onmupt = objpt;
+
+      if((trigname.Contains("3HitElectron") && trigname.Contains("Pixel")))
+	if(objpt > tree.onelpt) tree.onelpt = objpt;
     }
+
+    // Debug to find online seeds
+    // if(!has_isomu && tree.v_trigger[1]==1){
+    //   cout<<endl<<entry<<" Mu40 decision "<<tree.v_trigger[1]<<". mus ";
+    //   for(uint index=0; index<mus_pt->size(); index++)
+    // 	cout<<"("<<mus_pt->at(index)<<", "<<mus_eta->at(index)<<", "<<mus_phi->at(index)<<") ";
+    //   cout<<endl;
+    
+    //   for(unsigned int tri(0); tri < standalone_triggerobject_pt->size(); tri++){
+    // 	trigname = standalone_triggerobject_collectionname->at(tri); 
+    // 	objpt = standalone_triggerobject_pt->at(tri);
+    // 	objeta = standalone_triggerobject_eta->at(tri);
+    // 	if(trigname.Contains("Mu")){
+    // 	  cout<<trigname<<" -> ("<<objpt<<", "<<objeta
+    // 	      <<", "<<standalone_triggerobject_phi->at(tri)<<") "<<endl;
+    // 	}
+    //   }
+    // }
+
     if(index_onmet >= 0) tree.onmet = standalone_triggerobject_et->at(index_onmet);
     else tree.onmet = -999;
-    if(index_onmu >= 0) tree.onmupt = standalone_triggerobject_pt->at(index_onmu);
-    else tree.onmupt = -999;
-    if(index_onht >= 0) tree.onht = standalone_triggerobject_pt->at(index_onht);
-    else tree.onht = -999;
-    if(!has_caloiso) tree.onelpt = -999;
-
+    if(tree.onelpt>8 && tree.v_trigger[3]==0) tree.onelpt *= -1;
+    if(tree.onmupt>5 && tree.v_trigger[0]==0) tree.onmupt *= -1;
+    // cout<<"Sum jets "<<sumjets<<endl;
+    // cout<<"Sum jets No PU "<<sumjetspu<<endl;
+    // cout<<"Sum jets calo "<<sumjetscalo<<endl;
+    // cout<<"Sum jets L1 "<<sumjetsl1<<endl;
+    if(has_ak5nopu) tree.onht = sumjetspu;
+    else tree.onht = sumjets;
+    
     // Finding mT and deltaPhi with respect to highest pT lepton
     tree.mt = -999.; tree.dphi_wlep = -999.;
     if(lepmax_pt > 0){
@@ -393,10 +418,10 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
 }
 
 
-void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
+void ra4_handler::CalTrigEfficiency(int Nentries, TString outFilename){
 
   styles style; style.setDefaultStyle();
-  TFile outFile(outFilename.c_str(), "recreate");
+  TFile outFile(outFilename, "recreate");
   outFile.cd();
 
   TString TriggerName[][2] = {{"Mu40", "Mu40_PFHT350"},         {"Mu40", "Mu40_PFNoPUHT350"},
@@ -547,9 +572,9 @@ void ra4_handler::CalTrigEfficiency(int Nentries, string outFilename){
   cout<<"Finished saving file "<<outFilename<<endl;
 }
 
-void ra4_handler::PrintAllTriggers(string outName, int entry){
+void ra4_handler::PrintAllTriggers(TString outName, int entry){
   GetEntry(entry);
-  ofstream outTrigger(outName.c_str());
+  ofstream outTrigger(outName);
   for(unsigned int tri(0); tri < trigger_decision->size(); tri++)
     outTrigger<<trigger_name->at(tri)<<": decision "<<trigger_decision->at(tri)<<", prescale "<<trigger_prescalevalue->at(tri)<<endl;
   outTrigger<<endl<<endl<<"============== Standalone objects  ============="<<endl;
@@ -565,7 +590,7 @@ void ra4_handler::PrintAllTriggers(string outName, int entry){
     outTrigger<<endl;
   }
 
-  cout<<"Printed list of triggers in "<<outName.c_str()<<endl;
+  cout<<"Printed list of triggers in "<<outName<<endl;
 }
 
 vector<int> ra4_handler::GetMuons(bool doSignal){
