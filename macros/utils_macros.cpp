@@ -14,7 +14,7 @@ void ReadChains(TChain *chain[], int entries[]){
   TString folder = "archive/14-08-24/";
   TString FileNames[] = 
     {folder+"*T1ttt*1200_*", 
-     folder+"*T1ttt*1200_*", 
+     folder+"*T1ttt*1500_*", 
      folder+"*TT*",
      folder+"*QCD*",
      folder+"*WJets*"};
