@@ -32,7 +32,7 @@ public:
   TString confFile, Group;
   int nFont, nPads, nDivisions;
   int CanvasW, CanvasH;
-  float TextSize, TitleSize, LabelSize, xTitleOffset, yTitleOffset;
+  float TextSize, TitleSize, LabelSize, xTitleOffset, yTitleOffset, zTitleOffset;
   float PadRightMargin, PadBottomMargin, PadLeftMargin, PadTopMargin;
 };
 

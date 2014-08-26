@@ -43,6 +43,7 @@ void styles::setDefaultStyle() {
 
   gStyle->SetTitleOffset(xTitleOffset,"x");     
   gStyle->SetTitleOffset(yTitleOffset,"y");     
+  gStyle->SetTitleOffset(zTitleOffset,"z");     
   gStyle->SetPadRightMargin (PadRightMargin);    
   gStyle->SetPadBottomMargin(PadBottomMargin); 
   gStyle->SetPadTopMargin(PadTopMargin); 
@@ -60,6 +61,7 @@ void styles::setHistoStyle(TH1 *h) {
 
   h->SetTitleOffset(xTitleOffset,"x");     
   h->SetTitleOffset(yTitleOffset,"y");     
+  h->SetTitleOffset(zTitleOffset,"z");     
   h->SetNdivisions(nDivisions, "xyz");   // 5 primary ticks and 4 secondary ticks
   h->SetTitleFont(nFont,"xyz");          // Set the all 2 axes title font
   h->SetLabelFont(nFont,"xyz");          // Set the all 2 axes label font
@@ -82,11 +84,11 @@ void styles::setGroup(TString group){
 void styles::readGroupStyle() {
   TString inames[] = {"CanvasW", "CanvasH"};
   TString fnames[] = {"TextSize", "TitleSize", "LabelSize", "PadRightMargin", "PadTopMargin", "PadBottomMargin",
-		      "xTitleOffset", "PadLeftMargin", "yTitleOffset"};
+		      "xTitleOffset", "PadLeftMargin", "yTitleOffset", "zTitleOffset"};
   int   *ivalues[] = {&CanvasW, &CanvasH};
   float *fvalues[] = {&TextSize,&TitleSize,&LabelSize,&PadRightMargin,&PadTopMargin,&PadBottomMargin,
-		      &xTitleOffset,&PadLeftMargin,&yTitleOffset};
-  parseStyleFile(Group, fnames, fvalues, 9, inames, ivalues, 2);
+		      &xTitleOffset,&PadLeftMargin,&yTitleOffset,&zTitleOffset};
+  parseStyleFile(Group, fnames, fvalues, 10, inames, ivalues, 2);
 }
 
 // Fix for y axes that have too much/little space for the label due to number of digits
@@ -154,6 +156,7 @@ void styles::printValues() {
   cout<<"xTitleOffset    = " << xTitleOffset    << endl;
   cout<<"PadLeftMargin   = " << PadLeftMargin   << endl;
   cout<<"yTitleOffset    = " << yTitleOffset    << endl;
+  cout<<"zTitleOffset    = " << zTitleOffset    << endl;
 
 }
 
