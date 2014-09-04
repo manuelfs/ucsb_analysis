@@ -31,7 +31,8 @@ int main(){
   variables.push_back("float ht");
   variables.push_back("float mt");
   variables.push_back("float met");
-  variables.push_back("float met_gen");
+  variables.push_back("float genmet");
+  variables.push_back("float genht");
   variables.push_back("float met_phi");
   variables.push_back("float dphi_wlep");
   variables.push_back("float metsig");

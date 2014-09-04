@@ -47,7 +47,8 @@ public:
   float ht;
   float mt;
   float met;
-  float met_gen;
+  float genmet;
+  float genht;
   float met_phi;
   float dphi_wlep;
   float metsig;

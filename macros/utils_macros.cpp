@@ -11,6 +11,7 @@ using std::cout;
 using std::endl;
 
 void ReadChains(TChain *chain[], int entries[]){
+  //TString folder = "/net/cms8/cms8r0/johnbr/2014/RA2bHLT/ucsb_analysis/out/archive_08_25_14/";
   TString folder = "archive/14-08-24/";
   TString FileNames[] = 
     {folder+"*T1ttt*1200_*", 

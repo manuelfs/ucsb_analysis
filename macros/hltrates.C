@@ -34,10 +34,10 @@ using std::cout;
 using std::endl;
 
 TString RatesLine(int ht, int met, int pt, bool domu, TChain *chain[NSam], int noriginal[NSam]){
-  TString filter = "!((onht>200||met>70)&&weight>1e6)";
+  TString filter = "!(onht>350&&trigger[5]==0||onmet>150&&trigger[8]==0)";
   TString totCut = "(onht>"; totCut += ht;
-  totCut += "&&met>"; totCut += met; totCut += "&&onelpt>"; totCut += pt;
-  //totCut += ("&&"+filter);
+  totCut += "&&onmet>"; totCut += met; totCut += "&&onelpt>"; totCut += pt;
+  totCut += ("&&"+filter);
   totCut += ")";
   TString Hname = "histo", cut;
   float yield[NSam];
@@ -116,13 +116,13 @@ void hltrates(bool dofilter=true, TString filetype = ".eps"){
 
   // Histograms
   TString Hname, Title, totCut, Pname, dummy, Htag[]={"qcd","tt","wjets","sig1200","sig1500","tot"};
-  TString xTitle = "Minimum online PF H_{T} (GeV)";
+  TString xTitle = "Minimum offline PF H_{T} (GeV)";
   TString yTitle = "Minimum offline PF E_{T,miss} (GeV)";
   TString zTitle = "HLT rate for L = 1.4 cm^{-2}s^{-1} (Hz)";
   TH2F *hRate[NLeps][6];
-  TString filter = "!((onht>200||met>70)&&weight>1e6)";
+  TString filter = "!(onht>350&&trigger[5]==0||onmet>150&&trigger[8]==0)";
   if(!dofilter) filter = "1";
-  TString Cuts[] = {"onmupt>15.0", "onelpt>15.0", "onmupt>20.0"};
+  TString Cuts[] = {"onmupt>15.0", "onmupt>20.0", "onmupt>20.0"};
   int nBinsHt = 100, nBinsMet = 100;
   float minHt=0, maxHt=1000, minMet=0, maxMet=175;
   double levels[]={5,10,20};
@@ -152,7 +152,7 @@ void hltrates(bool dofilter=true, TString filetype = ".eps"){
 	hRate[lep][tag]->SetZTitle("T1ttt(1200,800) efficiency (%)");
       }
       if(tag==4) hRate[lep][tag]->SetZTitle("T1ttt(1500,100) efficiency (%)");
-      if(tag<5) chain[indchain[tag]]->Project(Hname, "met:onht", totCut);
+      if(tag<5) chain[indchain[tag]]->Project(Hname, "onmet:onht", totCut);
     }
     
     // Finding yields for different cuts
@@ -207,7 +207,7 @@ void hltrates(bool dofilter=true, TString filetype = ".eps"){
        if(hRate[lep][tag]) hRate[lep][tag]->Delete();
 }
 
-void hltrates1d(TString filetype = ".eps"){
+void hltrates1d(bool dofilter=true, bool owen=true, TString filetype = ".eps"){
   styles style("Standard"); style.setDefaultStyle();
   gStyle->SetHatchesLineWidth(2);
  
@@ -219,24 +219,31 @@ void hltrates1d(TString filetype = ".eps"){
   vector<int> indchain;
   indchain.push_back(3);
   indchain.push_back(2);
-  indchain.push_back(4);
+  if(!owen) indchain.push_back(4);
 
   // Variables and cuts
   TString VarName[] = {"onht", "onmet", "onht", "onmet"};
   TString Cuts[] = {"onmupt>15", "onmupt>15", "onmupt>15&&ht>0", "onmupt>15&&ht>0"};
-  TString tags[] = {"mu15", "mu15", "mu15ht0", "mu15ht0"};
+  //TString Cuts[] = {"1", "1", "onmupt>15&&ht>0", "onmupt>15&&ht>0"};
+  TString tags[] = {"", "", "mu15ht0", "mu15ht0"};
+  TString filter = "!(onht>350&&trigger[5]==0||onmet>150&&trigger[8]==0)";
+  if(!dofilter) filter = "1";
   float Range[NVar][2];
   int nBins[NVar];
   for(int var(0); var < NVar; var++){
-    if(VarName[var].Contains("onht")){
+    if(VarName[var].Contains("ht")){
       Range[var][0] = 400;
       Range[var][1] = 1800;
       nBins[var] = 35;
     }
-    if(VarName[var].Contains("onmet")){
+    if(VarName[var].Contains("met")){
       Range[var][0] = 30;
       Range[var][1] = 500;
       nBins[var] = 35;
+      if(owen){
+      Range[var][0] = 80;
+      Range[var][1] = 330;
+      }
     }
   }
 
@@ -277,6 +284,7 @@ void hltrates1d(TString filetype = ".eps"){
       Title = Cuts[var]; Title.ReplaceAll("onmupt","p_{T}^{#mu}");
       Title.ReplaceAll("&&",", "); Title.ReplaceAll("ht","H_{T}^{off}");
       Title.ReplaceAll(">"," > ");
+      if(Title=="1") Title = "";
       hFile[var][his]->SetTitle(Title);
       hFile[var][his]->SetXTitle(xTitle);
       hFile[var][his]->SetYTitle(yTitle);
@@ -284,7 +292,7 @@ void hltrates1d(TString filetype = ".eps"){
       // Finding yields for different cuts
       totCut = "1.4e-2/19600*weight*(" + VarName[var] + ">"; // Instant lumi 1.4e34 [1/cm2/s]
       totCut += hFile[var][his]->GetBinLowEdge(1); totCut += "&&";
-      totCut += Cuts[var]; totCut += ")";
+      totCut += (Cuts[var] + "&&"  + filter + ")");
       chain[indchain[his]]->Project(Hname, VarName[var], totCut);
       for(int bin(1); bin <= nBins[var]; bin++){
 	hFile[var][his]->SetBinContent(bin, hFile[var][his]->Integral(bin, nBins[var]+1));
@@ -308,11 +316,17 @@ void hltrates1d(TString filetype = ".eps"){
       } else hFile[var][his]->Draw("same");
     }
     leg.Draw();
-    Pname = "plots/hlt/rate_"; Pname += VarName[var]; Pname += tags[var]; Pname += filetype;
+    Pname = "plots/hlt/rate_"; Pname += VarName[var]; Pname += tags[var]; 
+    if(dofilter) Pname += "filter"; 
+    Pname += filetype;
     Pname.ReplaceAll("[","_"); Pname.ReplaceAll("]","");  Pname.ReplaceAll("+","-"); 
     can.SetLogy(1);
     hFile[var][0]->SetMinimum(0.001);
     hFile[var][0]->SetMaximum(maxHisto*10);
+    if(owen){
+      hFile[var][0]->SetMinimum(0.2);
+      hFile[var][0]->SetMaximum(20000);
+    }
     can.SaveAs(Pname);
 
   } // Loop over all variables

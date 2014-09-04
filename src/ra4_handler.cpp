@@ -111,7 +111,7 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
 	AllTriggers += tree.v_trigger[ieff];
       } else tree.v_trigger[ieff] = -1;
     }
-    if(tree.v_trigger[0]==0 && tree.v_trigger[3]==0) continue;
+    //if(tree.v_trigger[0]==0 && tree.v_trigger[3]==0) continue;
     // if(AllTriggers == 0) continue; // No desired triggers passed
 
     ////////////////   Leptons   ////////////////
@@ -302,6 +302,20 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
     tree.met = mets_et->at(0);
     tree.met_phi = mets_phi->at(0);
     tree.metsig = -1; // Undefined in new cfA
+    // True MET and HT
+    float metx(0), mety(0);
+    for(unsigned int imc = 0; imc < mc_final_id->size(); imc++){
+      int id = static_cast<int>(abs(mc_final_id->at(imc)));
+      if(id==12 || id==14 || id==16 || id==39 || id>1e6&&mc_final_charge->at(imc)==0) {
+	metx += mc_final_px->at(imc);
+	mety += mc_final_py->at(imc);
+      }
+    }
+    tree.genmet = sqrt(pow(metx,2)+pow(mety,2));
+    tree.genht = 0;
+    for(unsigned int imc = 0; imc < mc_jets_pt->size(); imc++)
+      if(mc_jets_pt->at(imc)>40 && mc_jets_eta->at(imc)<3) tree.genht += mc_jets_pt->at(imc);
+   
 
     ////////////////   Online objects   ////////////////
     // Setting up online MET
@@ -822,50 +836,51 @@ double ra4_handler::getDZ(double vx, double vy, double vz, double px, double py,
 
 vector<int> ra4_handler::GetJets(vector<int> SigEl, vector<int> SigMu, vector<int> VetoEl, vector<int> VetoMu, float &HT){
   vector<int> jets;
-  vector<bool> jet_is_lepton(jets_AK4_pt->size(), false);
+  // vector<bool> jet_is_lepton(jets_AK4_pt->size(), false);
   HT = 0;
-  // Finding jets that contain good leptons
-  for(uint index = 0; index < SigEl.size(); index++) {
-    int ijet = els_jet_ind->at(SigEl[index]);
-    if(ijet >= 0) {jet_is_lepton[ijet] = true;
-    }
-  }
-  for(uint index = 0; index < VetoEl.size(); index++) {
-    int ijet = els_jet_ind->at(VetoEl[index]);
-    if(ijet >= 0) jet_is_lepton[ijet] = true;
-  }
+  // // Finding jets that contain good leptons
+  // for(uint index = 0; index < SigEl.size(); index++) {
+  //   int ijet = els_jet_ind->at(SigEl[index]);
+  //   if(ijet >= 0) {jet_is_lepton[ijet] = true;
+  //   }
+  // }
+  // for(uint index = 0; index < VetoEl.size(); index++) {
+  //   int ijet = els_jet_ind->at(VetoEl[index]);
+  //   if(ijet >= 0) jet_is_lepton[ijet] = true;
+  // }
 
-  for(uint index = 0; index < SigMu.size(); index++) {
-    int ijet = mus_jet_ind->at(SigMu[index]);
-    if(ijet >= 0) {jet_is_lepton[ijet] = true;
-    }
-  }
-  for(uint index = 0; index < VetoMu.size(); index++) {
-    int ijet = mus_jet_ind->at(VetoMu[index]);
-    if(ijet >= 0) jet_is_lepton[ijet] = true;
-  }
+  // for(uint index = 0; index < SigMu.size(); index++) {
+  //   int ijet = mus_jet_ind->at(SigMu[index]);
+  //   if(ijet >= 0) {jet_is_lepton[ijet] = true;
+  //   }
+  // }
+  // for(uint index = 0; index < VetoMu.size(); index++) {
+  //   int ijet = mus_jet_ind->at(VetoMu[index]);
+  //   if(ijet >= 0) jet_is_lepton[ijet] = true;
+  //}
 
   // Tau/photon cleaning, and calculation of HT
   for(uint ijet = 0; ijet<jets_AK4_pt->size(); ijet++) {
-    if(!isGoodJet(ijet) || jet_is_lepton[ijet]) continue;
+    //if(!isGoodJet(ijet) || jet_is_lepton[ijet]) continue;
+    if(!isGoodJet(ijet) ) continue;
 
-    double tmpdR, partp, jetp = sqrt(pow(jets_AK4_px->at(ijet),2)+pow(jets_AK4_py->at(ijet),2)+pow(jets_AK4_pz->at(ijet),2));
-    bool useJet = true;
+    // double tmpdR, partp, jetp = sqrt(pow(jets_AK4_px->at(ijet),2)+pow(jets_AK4_py->at(ijet),2)+pow(jets_AK4_pz->at(ijet),2));
+    // bool useJet = true;
     // Tau cleaning: jet rejected if withing deltaR = 0.4 of tau, and momentum at least 60% from tau
-    for(uint index = 0; index < taus_pt->size(); index++) {
-      tmpdR = dR(jets_AK4_eta->at(ijet), taus_eta->at(index), jets_AK4_phi->at(ijet), taus_phi->at(index));	
-      partp = sqrt(pow(taus_px->at(index),2)+pow(taus_py->at(index),2)+pow(taus_pz->at(index),2));
-      if(tmpdR < 0.4 && partp/jetp >= 0.6){useJet = false; break;}
-    }
-    if(!useJet) continue;
+    // for(uint index = 0; index < taus_pt->size(); index++) {
+    //   tmpdR = dR(jets_AK4_eta->at(ijet), taus_eta->at(index), jets_AK4_phi->at(ijet), taus_phi->at(index));	
+    //   partp = sqrt(pow(taus_px->at(index),2)+pow(taus_py->at(index),2)+pow(taus_pz->at(index),2));
+    //   if(tmpdR < 0.4 && partp/jetp >= 0.6){useJet = false; break;}
+    // }
+    // if(!useJet) continue;
 
-    // Photon cleaning: jet rejected if withing deltaR = 0.4 of photon, and momentum at least 60% from photon
-    for(uint index = 0; index < photons_pt->size(); index++) {
-      tmpdR = dR(jets_AK4_eta->at(ijet), photons_eta->at(index), jets_AK4_phi->at(ijet), photons_phi->at(index));	
-      partp = sqrt(pow(photons_px->at(index),2)+pow(photons_py->at(index),2)+pow(photons_pz->at(index),2));
-      if(tmpdR < 0.4 && partp/jetp >= 0.6){useJet = false; break;}
-    }
-    if(!useJet) continue;
+    // // Photon cleaning: jet rejected if withing deltaR = 0.4 of photon, and momentum at least 60% from photon
+    // for(uint index = 0; index < photons_pt->size(); index++) {
+    //   tmpdR = dR(jets_AK4_eta->at(ijet), photons_eta->at(index), jets_AK4_phi->at(ijet), photons_phi->at(index));	
+    //   partp = sqrt(pow(photons_px->at(index),2)+pow(photons_py->at(index),2)+pow(photons_pz->at(index),2));
+    //   if(tmpdR < 0.4 && partp/jetp >= 0.6){useJet = false; break;}
+    // }
+    // if(!useJet) continue;
 
     if(jets_AK4_pt->at(ijet) > JetPTThresholdHT) HT += jets_AK4_pt->at(ijet);
     if(jets_AK4_pt->at(ijet) > JetPTThresholdNJ) jets.push_back(ijet);
@@ -956,7 +971,7 @@ ra4_handler::ra4_handler(const std::string &fileName, const bool fastMode):
     chainB.SetBranchStatus("Nmets*",0);
     //chainB.SetBranchStatus("taus*",0);
     chainB.SetBranchStatus("pfcand*",0);
-    chainB.SetBranchStatus("mc_final*",0);
+    //chainB.SetBranchStatus("mc_final*",0);
   }
 }
 

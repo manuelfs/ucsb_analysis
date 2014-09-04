@@ -39,7 +39,8 @@ small_tree::small_tree():
   tree.Branch("ht", &ht);
   tree.Branch("mt", &mt);
   tree.Branch("met", &met);
-  tree.Branch("met_gen", &met_gen);
+  tree.Branch("genmet", &genmet);
+  tree.Branch("genht", &genht);
   tree.Branch("met_phi", &met_phi);
   tree.Branch("dphi_wlep", &dphi_wlep);
   tree.Branch("metsig", &metsig);
@@ -99,7 +100,8 @@ small_tree::small_tree(TString filename):
   chain.SetBranchAddress("ht", &ht);
   chain.SetBranchAddress("mt", &mt);
   chain.SetBranchAddress("met", &met);
-  chain.SetBranchAddress("met_gen", &met_gen);
+  chain.SetBranchAddress("genmet", &genmet);
+  chain.SetBranchAddress("genht", &genht);
   chain.SetBranchAddress("met_phi", &met_phi);
   chain.SetBranchAddress("dphi_wlep", &dphi_wlep);
   chain.SetBranchAddress("metsig", &metsig);
