@@ -6,7 +6,7 @@ set Nevents=5000000
 #fi
 
 # T1tttt @ 13 TeV
-bsub ./run/make_tree.exe -i /cms2r0/johnbr/cfA/SMS-T1tttt_2J_mGl-1200_mLSP-800_Tune4C_13TeV-madgraph-tauola-Spring14miniaod-PU20bx25_POSTLS170_V5-v1-MINIAODSIM_cfA_v72 -n $Nevents  | tee log/maketree_13TeV_T1tttt_1200.log
+bsub ./run/make_tree.exe -i /cms2r0/cfA/SMS-T1tttt_2J_mGl-1200_mLSP-800_Tune4C_13TeV-madgraph-tauola-Spring14miniaod-PU20bx25_POSTLS170_V5-v1_MINIAODSIM_UCSB2085_v73 -n $Nevents  | tee log/maketree_13TeV_T1tttt_1200.log
 bsub ./run/make_tree.exe -i /cms2r0/cfA/SMS-T1tttt_2J_mGl-1500_mLSP-100_Tune4C_13TeV-madgraph-tauola_Spring14miniaod-PU20bx25_POSTLS170_V5-v1_MINIAODSIM_UCSB2120_v73  -n $Nevents  | tee log/maketree_13TeV_T1tttt_1500.log
 
 # tt @ 13 TeV
@@ -33,8 +33,8 @@ bsub ./run/make_tree.exe -i /cms6r0/CRAB_output/johnbr/QCD_Pt-1800to2400_Tune4C_
 bsub ./run/make_tree.exe -i /cms6r0/CRAB_output/johnbr/QCD_Pt-2400to3200_Tune4C_13TeV_pythia8  -n $Nevents  | tee log/maketree_13TeV_QCT_Pt-2400to3200.log
 
 # W + jets @ 13 TeV
-bsub ./run/make_tree.exe -i /cms6r0/CRAB_output/johnbr/WJetsToLNu_HT-100to200_Tune4C_13TeV-madgraph-tauola -n $Nevents  | tee log/maketree_13TeV_WJetsToLNu_HT-100to200.log
-bsub ./run/make_tree.exe -i /cms6r0/CRAB_output/johnbr/WJetsToLNu_HT-200to400_Tune4C_13TeV-madgraph-tauola -n $Nevents  | tee log/maketree_13TeV_WJetsToLNu_HT-200to400.log
+bsub ./run/make_tree.exe -i /cms2r0/cfA/WJetsToLNu_HT-100to200_Tune4C_13TeV-madgraph-tauola_Spring14miniaod-PU20bx25_POSTLS170_V5-v2_MINIAODSIM_UCSB2097_v73 -n $Nevents  | tee log/maketree_13TeV_WJetsToLNu_HT-100to200.log
+bsub ./run/make_tree.exe -i /cms2r0/cfA/WJetsToLNu_HT-200to400_Tune4C_13TeV-madgraph-tauola_Spring14miniaod-PU20bx25_POSTLS170_V5-v1_MINIAODSIM_UCSB2096_v73 -n $Nevents  | tee log/maketree_13TeV_WJetsToLNu_HT-200to400.log
 bsub ./run/make_tree.exe -i /homes/manuelf/links/files/WJetsToLNu_HT-400to600_Tune4C_13TeV-madgraph-tauola -n $Nevents  | tee log/maketree_13TeV_WJetsToLNu_HT-400to600.log
 bsub ./run/make_tree.exe -i /homes/manuelf/links/files/WJetsToLNu_HT-600toInf_Tune4C_13TeV-madgraph-tauola -n $Nevents  | tee log/maketree_13TeV_WJetsToLNu_HT-600toinf.log   
 

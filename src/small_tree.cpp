@@ -10,6 +10,18 @@ using std::endl;
 
 small_tree::small_tree():
   tree("tree", "tree"){
+  tree.Branch("genmus_pt", &genmus_pt);
+  genmus_pt = &v_genmus_pt;
+  tree.Branch("genmus_eta", &genmus_eta);
+  genmus_eta = &v_genmus_eta;
+  tree.Branch("genmus_phi", &genmus_phi);
+  genmus_phi = &v_genmus_phi;
+  tree.Branch("genels_pt", &genels_pt);
+  genels_pt = &v_genels_pt;
+  tree.Branch("genels_eta", &genels_eta);
+  genels_eta = &v_genels_eta;
+  tree.Branch("genels_phi", &genels_phi);
+  genels_phi = &v_genels_phi;
   tree.Branch("nlep", &nlep);
   tree.Branch("nel", &nel);
   tree.Branch("nvel", &nvel);
@@ -36,6 +48,7 @@ small_tree::small_tree():
   tree.Branch("weight", &weight);
   tree.Branch("wpu", &wpu);
   tree.Branch("wlumi", &wlumi);
+  tree.Branch("wl1ht200", &wl1ht200);
   tree.Branch("ht", &ht);
   tree.Branch("mt", &mt);
   tree.Branch("met", &met);
@@ -79,6 +92,12 @@ small_tree::small_tree():
 small_tree::small_tree(TString filename):
   chain("tree"){
   chain.Add(filename);
+  chain.SetBranchAddress("genmus_pt", &genmus_pt);
+  chain.SetBranchAddress("genmus_eta", &genmus_eta);
+  chain.SetBranchAddress("genmus_phi", &genmus_phi);
+  chain.SetBranchAddress("genels_pt", &genels_pt);
+  chain.SetBranchAddress("genels_eta", &genels_eta);
+  chain.SetBranchAddress("genels_phi", &genels_phi);
   chain.SetBranchAddress("nlep", &nlep);
   chain.SetBranchAddress("nel", &nel);
   chain.SetBranchAddress("nvel", &nvel);
@@ -97,6 +116,7 @@ small_tree::small_tree(TString filename):
   chain.SetBranchAddress("weight", &weight);
   chain.SetBranchAddress("wpu", &wpu);
   chain.SetBranchAddress("wlumi", &wlumi);
+  chain.SetBranchAddress("wl1ht200", &wl1ht200);
   chain.SetBranchAddress("ht", &ht);
   chain.SetBranchAddress("mt", &mt);
   chain.SetBranchAddress("met", &met);

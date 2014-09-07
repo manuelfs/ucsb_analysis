@@ -18,6 +18,18 @@ public:
   bool isReadOnly;
   TChain chain;
   TTree tree;
+  vector<double>* genmus_pt;
+  vector<double> v_genmus_pt;
+  vector<double>* genmus_eta;
+  vector<double> v_genmus_eta;
+  vector<double>* genmus_phi;
+  vector<double> v_genmus_phi;
+  vector<double>* genels_pt;
+  vector<double> v_genels_pt;
+  vector<double>* genels_eta;
+  vector<double> v_genels_eta;
+  vector<double>* genels_phi;
+  vector<double> v_genels_phi;
   int nlep;
   int nel;
   int nvel;
@@ -44,6 +56,7 @@ public:
   float weight;
   float wpu;
   float wlumi;
+  float wl1ht200;
   float ht;
   float mt;
   float met;

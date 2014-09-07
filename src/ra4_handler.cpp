@@ -29,6 +29,25 @@ const std::vector<std::vector<int> > VRunLumi13Jul(MakeVRunLumi("13Jul"));
 #define NTrigReduced 12
 
 void ra4_handler::ReduceTree(int Nentries, TString outFilename){
+  // for(int entry(0); entry < Nentries; entry++){
+  //   GetEntry(entry);
+  //   for(unsigned int imc = 0; imc < mc_doc_id->size(); imc++){
+  //     if(abs(mc_doc_mother_id->at(imc))==24){// && mc_doc_status->at(imc)==23){
+  //     cout<<imc<<": ID "<<(int)mc_doc_id->at(imc)<<",   \tMom ID "<<(int)mc_doc_mother_id->at(imc)
+  // 	  <<", \tGMom ID "<<(int)mc_doc_grandmother_id->at(imc)
+  // 	  <<", \tGGMom ID "<<(int)mc_doc_ggrandmother_id->at(imc)
+  // 	  <<", \tN daughters "<<mc_doc_numOfDaughters->at(imc)
+  // 	  <<",   \tN moms "<<mc_doc_numOfMothers->at(imc)
+  // 	  <<",   \tstatus "<<mc_doc_status->at(imc)
+  // 	  <<",   \tpT "<<mc_doc_pt->at(imc)
+  // 	  <<",   \teta "<<mc_doc_eta->at(imc)
+  // 	  <<",   \tphi "<<mc_doc_phi->at(imc)<<endl;
+  //     }
+  //   }
+  //   cout<<endl<<endl;
+  // }
+  // return;
+
   TFile outFile(outFilename, "recreate");
   outFile.cd();
 
@@ -302,6 +321,7 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
     tree.met = mets_et->at(0);
     tree.met_phi = mets_phi->at(0);
     tree.metsig = -1; // Undefined in new cfA
+
     // True MET and HT
     float metx(0), mety(0);
     for(unsigned int imc = 0; imc < mc_final_id->size(); imc++){
@@ -315,6 +335,28 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
     tree.genht = 0;
     for(unsigned int imc = 0; imc < mc_jets_pt->size(); imc++)
       if(mc_jets_pt->at(imc)>40 && mc_jets_eta->at(imc)<3) tree.genht += mc_jets_pt->at(imc);
+
+    // True leptons
+    tree.genmus_pt->resize(0); tree.genels_pt->resize(0);
+    tree.genmus_eta->resize(0); tree.genels_eta->resize(0);
+    tree.genmus_phi->resize(0); tree.genels_phi->resize(0);
+    for(unsigned int imc = 0; imc < mc_doc_id->size(); imc++){
+      int id = static_cast<int>(abs(mc_doc_id->at(imc)));
+      int momid = static_cast<int>(abs(mc_doc_mother_id->at(imc)));
+      pt = mc_doc_pt->at(imc);
+      if(momid == 24){
+	if(id==11) {
+	  tree.genels_pt->push_back(pt);
+	  tree.genels_eta->push_back(mc_doc_eta->at(imc));
+	  tree.genels_phi->push_back(mc_doc_phi->at(imc));
+	}
+	if(id==13) {
+	  tree.genmus_pt->push_back(pt);
+	  tree.genmus_eta->push_back(mc_doc_eta->at(imc));
+	  tree.genmus_phi->push_back(mc_doc_phi->at(imc));
+	}
+      }
+    }
    
 
     ////////////////   Online objects   ////////////////
@@ -363,7 +405,7 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
     // }
 
     if(index_onmet >= 0) tree.onmet = standalone_triggerobject_et->at(index_onmet);
-    else tree.onmet = -999;
+    else tree.onmet = -tree.met;//-999;
     if(tree.onelpt>8 && tree.v_trigger[3]==0) tree.onelpt *= -1;
     if(tree.onmupt>5 && tree.v_trigger[0]==0) tree.onmupt *= -1;
     // cout<<"Sum jets "<<sumjets<<endl;
@@ -406,7 +448,8 @@ void ra4_handler::ReduceTree(int Nentries, TString outFilename){
 	}
     } 
     tree.wlumi = xsec*luminosity / static_cast<double>(Nentries);
-    tree.weight = tree.wpu*tree.wlumi;
+    tree.wl1ht200 = (0.5*TMath::Erf((1.35121e-02)*(tree.genht-(3.02695e+02)))+0.5);
+    tree.weight = tree.wpu*tree.wlumi*tree.wl1ht200;
 
     
     tree.Fill();
@@ -837,6 +880,7 @@ double ra4_handler::getDZ(double vx, double vy, double vz, double px, double py,
 vector<int> ra4_handler::GetJets(vector<int> SigEl, vector<int> SigMu, vector<int> VetoEl, vector<int> VetoMu, float &HT){
   vector<int> jets;
   // vector<bool> jet_is_lepton(jets_AK4_pt->size(), false);
+  HT = SigEl.size()+VetoEl.size()+SigMu.size()+VetoMu.size(); // To avoid warnings
   HT = 0;
   // // Finding jets that contain good leptons
   // for(uint index = 0; index < SigEl.size(); index++) {

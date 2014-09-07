@@ -10,6 +10,13 @@ int main(){
   TString name, copy;
   // Add all small_tree variables here
   vector<TString> variables;
+  variables.push_back("vector<double>* genmus_pt");
+  variables.push_back("vector<double>* genmus_eta");
+  variables.push_back("vector<double>* genmus_phi");
+  variables.push_back("vector<double>* genels_pt");
+  variables.push_back("vector<double>* genels_eta");
+  variables.push_back("vector<double>* genels_phi");
+
   variables.push_back("int nlep");
   variables.push_back("int nel");
   variables.push_back("int nvel");
@@ -28,6 +35,7 @@ int main(){
   variables.push_back("float weight");
   variables.push_back("float wpu");
   variables.push_back("float wlumi");
+  variables.push_back("float wl1ht200");
   variables.push_back("float ht");
   variables.push_back("float mt");
   variables.push_back("float met");

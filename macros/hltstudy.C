@@ -26,17 +26,163 @@
 #include "TMath.h"
 
 #define NVar 2
-#define NSam 4
+#define NSam 6
 #define NLeps 1
 
 using namespace std;
 using std::cout;
 using std::endl;
 
-void ReadChains(TChain *chain[], int entries[], TString folder="root/hlt/conf710");
+void ReadChains(TChain *chain[], int entries[], TString folder);
+
+void hltstudy(TString folder="root/hlt/ht200/mu15/", TString filetype = ".eps"){
+  styles style("2Dtitle"); style.setDefaultStyle();
+  gStyle->SetHatchesLineWidth(2);
+  TCanvas can;
+  bool isEl = folder.Contains("el")?true:false;
+
+  //Files
+  TChain *chain[NSam];
+  int noriginal[NSam];
+  ReadChains(chain, noriginal, folder);
+  vector<int> indchain;
+  indchain.push_back(3);
+  indchain.push_back(4);
+  indchain.push_back(5);
+  indchain.push_back(0);
+  indchain.push_back(1);
+  indchain.push_back(2);
+
+  // Histograms
+  TString Hname, totCut, Pnamebase, Pname, Htag[]={"QCD","tt","Wjets","sig1025","sig1200", "sig1500","Total"};
+  TString xTitle = "Minimum HLT PF H_{T} (GeV)";
+  TString yTitle = "Minimum HLT PF E_{T,miss} (GeV)";
+  TString zTitle = "HLT rate (Hz)";
+  TH2F *hRate[NLeps][NSam+1], *hContour[NLeps][4];
+  //TString Cuts[] = {"onmupt>15.0", "onmupt>20.0", "onmupt>20.0"};
+  TString Cuts[] = {"1", "1", "1"};
+  //TString Cuts[] = {"((abs(jets_phi[0]-jets_phi[1])*(abs(jets_phi[0]-jets_phi[1])<3.1416)+(2*3.1416-abs(jets_phi[0]-jets_phi[1]))*(abs(jets_phi[0]-jets_phi[1])>=3.1416))>2.8)", "1", "1"};
+  int nBinsHt = 100, nBinsMet = 90;
+  float minHt=200, maxHt=1000, minMet=0, maxMet=180;
+
+  double legX = 0.72, legY = 0.87;
+  double legW = 0.12, legH = 0.2;
+  TLegend leg(legX, legY-legH, legX+legW, legY);
+  leg.SetTextSize(0.056); leg.SetFillColor(0); //leg.SetFillStyle(0); leg.SetBorderSize(0);
+  leg.SetTextFont(132);
+  vector<double> levels, htlevels;
+  levels.push_back(1); levels.push_back(2); 
+  levels.push_back(5); levels.push_back(10); 
+  htlevels.push_back(400); htlevels.push_back(500); 
+  htlevels.push_back(600); htlevels.push_back(700); 
+  int lcolors[]={2, 28, 1, 4};
+  TString styles[]={"cont3 same", "cont3 same", "cont3 same", "cont3 same"};
+  vector<TString>legtag;
+  for(unsigned tag(0); tag < levels.size(); tag++){
+    legtag.push_back(""); 
+    if(levels[tag]<1) legtag[tag] += RoundNumber(levels[tag],2);
+    else legtag[tag] += levels[tag];
+    legtag[tag] += " Hz";
+  }
+  
+  TString Title = "p_{T}^{#mu} > 15 GeV";
+  if(isEl) Title.ReplaceAll("#mu","e");
+  for(int lep(0); lep < NLeps; lep++){
+    totCut = "1.4e-2/19600*weight*(" + Cuts[lep] + ")";
+    for(int tag(0); tag < 4; tag++){
+      Hname = Htag[tag]+"contour"; Hname += lep;
+      hContour[lep][tag] = new TH2F(Hname,Title,nBinsHt, minHt, maxHt, nBinsMet, minMet, maxMet);
+    }      
+    for(int sam(0); sam < NSam+1; sam++){
+      Hname = Htag[sam]; Hname += lep;
+      hRate[lep][sam] = new TH2F(Hname,Title+", L = 1.4 #times 10^{34} cm^{-2}s^{-1}",
+				 nBinsHt, minHt, maxHt, nBinsMet, minMet, maxMet);
+      hRate[lep][sam]->SetXTitle(xTitle);
+      hRate[lep][sam]->SetYTitle(yTitle);
+      hRate[lep][sam]->SetZTitle(Htag[sam]+" "+zTitle);
+      if(Htag[sam].Contains("sig")) hRate[lep][sam]->SetTitle(Title);
+      if(sam==NSam-3) {
+	totCut.ReplaceAll("1.4e-2/19600*weight*(","wl1ht200*(Max$(genmus_pt[0])>0&&");
+	if(isEl) totCut.ReplaceAll("genmus", "genels");
+	hRate[lep][sam]->SetZTitle("T1tttt(1025,625) efficiency (%)");	
+      }
+      if(sam==NSam-2) hRate[lep][sam]->SetZTitle("T1tttt(1200,800) efficiency (%)");	
+      if(sam==NSam-1) hRate[lep][sam]->SetZTitle("T1tttt(1500,100) efficiency (%)");
+      if(sam<NSam) chain[indchain[sam]]->Project(Hname, "abs(onmet):onht", totCut);
+    }
+
+    // Finding yields for different cuts
+    unsigned int iht(0); int itag(3);
+    for(int htbin(1); htbin <= nBinsHt; htbin++){
+      for(int metbin(1); metbin <= nBinsMet; metbin++){
+	float bkgrate(0), rate;
+	for(int sam(0); sam < NSam; sam++){
+	  rate = hRate[lep][sam]->Integral(htbin, nBinsHt+1, metbin, nBinsMet+1);
+	  if(sam < NSam-3) bkgrate += rate;
+	  else rate *= (100./(double)noriginal[indchain[sam]]);
+	  hRate[lep][sam]->SetBinContent(htbin, metbin, rate);
+	}
+	hRate[lep][NSam]->SetBinContent(htbin, metbin, bkgrate);
+	// Filling contour histograms and printing cuts for desired rate levels
+	for(int tag(0); tag < 4; tag++){
+	  if(iht < htlevels.size()){
+	    if(hContour[lep][tag]->GetXaxis()->GetBinLowEdge(htbin) >= htlevels[iht]){
+	      if(itag==tag && bkgrate<=levels[itag] || metbin==nBinsMet) {
+		if(itag==3) 
+		  cout<<"-- HT > "<<RoundNumber(hContour[lep][tag]->GetXaxis()->GetBinLowEdge(htbin),1)<<endl;
+		cout<<"MET > "<<RoundNumber(hContour[lep][tag]->GetYaxis()->GetBinLowEdge(metbin),1)
+		    <<": \t"<<RoundNumber(bkgrate,2)<<" Hz, \teff1200 "
+		    <<RoundNumber(hRate[lep][NSam-2]->GetBinContent(htbin, metbin),1)<<" %, \teff1500 "
+		    <<RoundNumber(hRate[lep][NSam-1]->GetBinContent(htbin, metbin),1)<<endl;
+		itag--;
+		if(itag==-1) {iht++; itag=3; cout<<endl;}
+	      }
+	    }
+	  }
+	  hContour[lep][tag]->SetBinContent(htbin, metbin, bkgrate);
+	} // Loop over contour lines
+      } // Loop over MET bins
+    } // Loop over HT bins
+    hRate[lep][NSam]->Draw("colz");
+    leg.Clear();
+    for(int tag(0); tag < 4; tag++){
+      hContour[lep][tag]->SetContour(1,&levels[tag]); hContour[lep][tag]->SetLineColor(lcolors[tag]);
+      hContour[lep][tag]->SetLineWidth(4);
+      hContour[lep][tag]->Draw(styles[tag]);
+      leg.AddEntry(hContour[lep][tag], legtag[tag]);
+    }
+    // Plotting rates and efficiencies
+    Pnamebase = "plots/hltstudy/rate2d_"; Pnamebase += (isEl?"el":"mu"); 
+    Pnamebase += filetype;
+    for(int sam(0); sam < NSam+1; sam++){
+      Pname = Pnamebase; 
+      if(Htag[sam].Contains("sig")) {
+	Pname.ReplaceAll("rate2d", Htag[sam]+"effi2d");
+	can.SetLogz(0);
+      } else {
+	hRate[lep][sam]->SetMinimum(0.01);
+	hRate[lep][sam]->SetMaximum(2*hRate[lep][NSam]->GetMaximum());
+	Pname.ReplaceAll("rate2d", Htag[sam]+"rate2d");
+	can.SetLogz(1);
+      }
+      hRate[lep][sam]->Draw("colz");
+      if(sam>=NSam-3) for(int tag(0); tag < 4; tag++) hContour[lep][tag]->Draw(styles[tag]);
+      leg.Draw();
+      can.SaveAs(Pname);
+    }
+  } // Loop over lepton cuts
+
+  for(int lep(0); lep < NLeps; lep++){
+     for(int tag(0); tag < NSam+1; tag++)
+       if(hRate[lep][tag]) hRate[lep][tag]->Delete();
+     for(int tag(0); tag < 4; tag++)
+       if(hContour[lep][tag]) hContour[lep][tag]->Delete();
+  }
+}
+
 TString RatesLine(int ht, int met, int pt, bool domu, TChain *chain[NSam], int noriginal[NSam]);
 
-void RatesPrint(TString folder="root/hlt/conf710/el15"){
+void RatesPrint(TString folder="root/hlt/sep4/el15"){
   bool domu(folder.Contains("mu")?true:false);
   bool do711(folder.Contains("711")?true:false);
   TChain *chain[NSam];
@@ -123,148 +269,6 @@ TString RatesLine(int ht, int met, int pt, bool domu, TChain *chain[NSam], int n
   return out;
 }
 
-void hltstudy(TString folder="root/hlt/conf710/el15", TString filetype = ".eps"){
-  styles style("2Dtitle"); style.setDefaultStyle();
-  gStyle->SetHatchesLineWidth(2);
-  TCanvas can;
-  bool isEl = folder.Contains("el")?true:false;
-
-  //Files
-  TChain *chain[NSam];
-  int noriginal[NSam];
-  ReadChains(chain, noriginal, folder);
-  vector<int> indchain;
-  indchain.push_back(2);
-  indchain.push_back(3);
-  indchain.push_back(0);
-  indchain.push_back(1);
-
-  // Histograms
-  TString Hname, totCut, Pname, dummy, Htag[]={"qcd","tt","wjets","sig825","sig1025","tot"};
-  TString xTitle = "Minimum HLT PF H_{T} (GeV)";
-  TString yTitle = "Minimum HLT PF E_{T,miss} (GeV)";
-  TString zTitle = "HLT rate (Hz)";
-  TH2F *hRate[NLeps][NSam+1], *hContour[NLeps][4];
-  //TString Cuts[] = {"onmupt>15.0", "onmupt>20.0", "onmupt>20.0"};
-  TString Cuts[] = {"1", "1", "1"};
-  int nBinsHt = 400, nBinsMet = 90;
-  float minHt=200, maxHt=1000, minMet=0, maxMet=180;
-
-  double legX = 0.7, legY = 0.87;
-  double legW = 0.14, legH = 0.2;
-  TLegend leg(legX, legY-legH, legX+legW, legY);
-  leg.SetTextSize(0.056); leg.SetFillColor(0); //leg.SetFillStyle(0); leg.SetBorderSize(0);
-  leg.SetTextFont(132);
-  vector<double> levels, htlevels;
-  levels.push_back(0.35); levels.push_back(2); 
-  levels.push_back(5); levels.push_back(10); 
-  htlevels.push_back(400); htlevels.push_back(500); 
-  htlevels.push_back(600); htlevels.push_back(700); 
-  int lcolors[]={2, 28, 1, 4};
-  TString styles[]={"cont3 same", "cont3 same", "cont3 same", "cont3 same"};
-  vector<TString>legtag;
-  for(unsigned tag(0); tag < levels.size(); tag++){
-    legtag.push_back(""); 
-    if(levels[tag]<1) legtag[tag] += RoundNumber(levels[tag],2);
-    else legtag[tag] += levels[tag];
-    legtag[tag] += " Hz";
-  }
-
-  TString Title = "p_{T}^{#mu} > 15 GeV";
-  if(isEl) Title.ReplaceAll("#mu","e");
-  for(int lep(0); lep < NLeps; lep++){
-    totCut = "1.4e-2/19600*weight*(" + Cuts[lep] + ")";
-    for(int tag(0); tag < 4; tag++){
-      Hname = Htag[tag]+"contour"; Hname += lep;
-      hContour[lep][tag] = new TH2F(Hname,Title,nBinsHt, minHt, maxHt, nBinsMet, minMet, maxMet);
-    }      
-    for(int tag(0); tag < NSam+1; tag++){
-      Hname = Htag[tag]; Hname += lep;
-      hRate[lep][tag] = new TH2F(Hname,Title+", L = 1.4 #times 10^{-34} cm^{-2}s^{-1}",
-				 nBinsHt, minHt, maxHt, nBinsMet, minMet, maxMet);
-      hRate[lep][tag]->SetXTitle(xTitle);
-      hRate[lep][tag]->SetYTitle(yTitle);
-      hRate[lep][tag]->SetZTitle(zTitle);
-      if(tag==NSam-2) {
-	totCut.ReplaceAll("1.4e-2/19600*weight*","wl1ht200*");
-	hRate[lep][tag]->SetZTitle("T1tttt(825,525) efficiency (%)");
-	hRate[lep][tag]->SetTitle(Title);
-      }
-      if(tag==NSam-1) hRate[lep][tag]->SetZTitle("T1tttt(1025,625) efficiency (%)");
-      if(tag<NSam) chain[indchain[tag]]->Project(Hname, "onmet:onht", totCut);
-    }
-
-    // Finding yields for different cuts
-    unsigned int iht(0); int itag(3);
-    for(int htbin(1); htbin <= nBinsHt; htbin++){
-      for(int metbin(1); metbin <= nBinsMet; metbin++){
-	float totrate(0);
-	for(int tag(0); tag < NSam-2; tag++)
-	  totrate += hRate[lep][tag]->Integral(htbin, nBinsHt+1, metbin, nBinsMet+1);
-	for(int tag(NSam-2); tag < NSam+1; tag++){
-	  if(tag==NSam) hRate[lep][tag]->SetBinContent(htbin, metbin, totrate);
-	  else hRate[lep][tag]->SetBinContent(htbin, metbin, 100./(double)noriginal[indchain[NSam-2]]*
-					      hRate[lep][tag]->Integral(htbin, nBinsHt+1, metbin, nBinsMet+1));
-	}
-	// Filling contour histograms and printing cuts for desired rate levels
-	for(int tag(0); tag < 4; tag++){
-	  if(iht < htlevels.size()){
-	    if(hContour[lep][tag]->GetXaxis()->GetBinLowEdge(htbin) >= htlevels[iht]){
-	      if(itag==tag && totrate<=levels[itag] || metbin==nBinsMet) {
-		if(itag==3) 
-		  cout<<"-- HT > "<<RoundNumber(hContour[lep][tag]->GetXaxis()->GetBinLowEdge(htbin),1)<<endl;
-		cout<<"MET > "<<RoundNumber(hContour[lep][tag]->GetYaxis()->GetBinLowEdge(metbin),1)
-		    <<": \t"<<RoundNumber(totrate,2)<<" Hz, \teff825 "
-		    <<RoundNumber(hRate[lep][NSam-2]->GetBinContent(htbin, metbin),1)<<" %, \teff1025 "
-		    <<RoundNumber(hRate[lep][NSam-1]->GetBinContent(htbin, metbin),1)<<endl;
-		itag--;
-		if(itag==-1) {iht++; itag=3; cout<<endl;}
-	      }
-	    }
-	  }
-	  hContour[lep][tag]->SetBinContent(htbin, metbin, totrate);
-	} // Loop over contour lines
-      } // Loop over MET bins
-    } // Loop over HT bins
-    hRate[lep][NSam]->Draw("colz");
-    leg.Clear();
-    for(int tag(0); tag < 4; tag++){
-      hContour[lep][tag]->SetContour(1,&levels[tag]); hContour[lep][tag]->SetLineColor(lcolors[tag]);
-      hContour[lep][tag]->SetLineWidth(4);
-      hContour[lep][tag]->Draw(styles[tag]);
-      leg.AddEntry(hContour[lep][tag], legtag[tag]);
-    }
-    leg.Draw();
-    dummy = Cuts[lep]; dummy.ReplaceAll(">",""); dummy.ReplaceAll("on",""); dummy.ReplaceAll(".0",""); 
-    dummy.ReplaceAll("&&",""); 
-    Pname = "plots/hltstudy/rate2d_"; Pname += (isEl?"el":"mu"); 
-    Pname += (folder.Contains("710")?"710":"711"); 
-    Pname += filetype;
-    can.SetLogz(1);
-    can.SaveAs(Pname);
-
-    // Plotting efficiencies
-    can.SetLogz(0);
-    hRate[lep][NSam-2]->Draw("colz");
-    for(int tag(0); tag < 4; tag++) hContour[lep][tag]->Draw(styles[tag]);
-    Pname.ReplaceAll("rate2d","effi2d_825");
-    leg.Draw();
-    can.SaveAs(Pname);
-    hRate[lep][NSam-1]->Draw("colz");
-    for(int tag(0); tag < 4; tag++) hContour[lep][tag]->Draw(styles[tag]);
-    Pname.ReplaceAll("effi2d_825", "effi2d_1025");
-    leg.Draw();
-    can.SaveAs(Pname);
-
-  } // Loop over lepton cuts
-
-  for(int lep(0); lep < NLeps; lep++){
-     for(int tag(0); tag < NSam+1; tag++)
-       if(hRate[lep][tag]) hRate[lep][tag]->Delete();
-     for(int tag(0); tag < 4; tag++)
-       if(hContour[lep][tag]) hContour[lep][tag]->Delete();
-  }
-}
 
 // Not fully adapted to ntuples from HLT babies
 void hltstudy1d(TString folder="root/hlt/conf710/el15", bool owen=true, TString filetype = ".eps"){
@@ -400,20 +404,27 @@ void hltstudy1d(TString folder="root/hlt/conf710/el15", bool owen=true, TString 
 
 void ReadChains(TChain *chain[], int entries[], TString folder){
   TString FileNames[] = 
-    {folder+"/*T1tttt*825_*", 
-     folder+"/*T1tttt*1025_*", 
+    {folder+"/*T1tttt*1025_*", 
+     folder+"/*T1tttt*1200_*", 
+     folder+"/*T1tttt*1500_*", 
      folder+"/*QCD*",
      folder+"/*TT*",
      folder+"/*WJets*"};
 
-  TChain *tglobal[NSam];
+  bool isEl = folder.Contains("el")?true:false;
   for(int sam(0); sam < NSam; sam++){
     chain[sam] = new TChain("tree");
     chain[sam]->Add(FileNames[sam]);
-    tglobal[sam] = new TChain("treeglobal");
-    tglobal[sam]->Add(FileNames[sam]);
-    tglobal[sam]->SetBranchAddress("noriginal",&entries[sam]);
-    tglobal[sam]->GetEntry(0);
-    tglobal[sam]->Delete();
+    if(FileNames[sam].Contains("T1tttt")) {
+      int noriginal, nori_genmu0, nori_genel0;
+      TChain tglobal("treeglobal");
+      tglobal.Add(FileNames[sam]);
+      tglobal.SetBranchAddress("noriginal",&noriginal);
+      tglobal.SetBranchAddress("nori_genel0",&nori_genel0);
+      tglobal.SetBranchAddress("nori_genmu0",&nori_genmu0);
+      tglobal.GetEntry(0);
+      if(isEl) entries[sam] = nori_genel0;
+      else entries[sam] = nori_genmu0;
+    }
   }// Loop over samples
 }
