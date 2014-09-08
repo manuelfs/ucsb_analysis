@@ -10,122 +10,142 @@
 #include "TLegend.h"
 #include "TString.h"
 
-//
-//TH1F initialization
-//
-TH1F* InitTH1F(char* Name, char* Title, int Nbins, double XMin, double XMax){
-  TH1F *h1 = new TH1F(Name, Title, Nbins, XMin, XMax);
-  h1->Sumw2();
-  return h1;
-}
+#define NSam 6
 
-//
-// h1 cosmetics
-//
-void h1cosmetic(TH1F* &h1, char* title, int linecolor=kRed, int linewidth=1, int fillcolor=0, TString var=""){
-  h1->SetLineColor(linecolor);
-  h1->SetLineWidth(linewidth);
-  h1->SetFillColor(fillcolor);
-  h1->SetTitle(title);
-  h1->SetName(title);
-  h1->SetXTitle(var);
-  h1->SetYTitle("a.u.");
-  h1->SetStats(0);
-  h1->SetMinimum(0.1);
-}
+using namespace std;
+using std::cout;
+using std::endl;
 
-void Draw1D(TString var, bool isMu, int Nbins, float BeginRange, float EndRange) { 
-  TString dir_711, dir_710;
-  if(isMu)  dir_711 = "/homes/manuelf/code/ucsb_analysis/root/hlt/conf711/mu15/"; 
-  if(!isMu)  dir_711 = "/homes/manuelf/code/ucsb_analysis/root/hlt/conf711/el15/"; 
-  if(isMu)  dir_710 = "/homes/manuelf/code/ucsb_analysis/root/hlt/conf710/mu15/"; 
-  if(!isMu)  dir_710 = "/homes/manuelf/code/ucsb_analysis/root/hlt/conf710/el15/"; 
-  /*
-   *Br    2 :onmet     : onmet/F                                                *
-   *Br    3 :onht      : onht/F                                                 *
-   *Br    4 :weight    : weight/F                                               *
-   *Br    5 :wl1ht200  : wl1ht200/F                                             *
-   *Br    6 :genht     : genht/F                                                *
-   */
-  TChain *ch_qcd_711 = new TChain("tree"); 
-  ch_qcd_711->Add(dir_711+"QCD*");
-  TChain *ch_1025_711 = new TChain("tree"); 
-  ch_1025_711->Add(dir_711+"T1tttt_1025_625*.root");
-  TChain *ch_qcd_710 = new TChain("tree"); 
-  ch_qcd_710->Add(dir_710+"QCD*");
-  TChain *ch_1025_710 = new TChain("tree"); 
-  ch_1025_710->Add(dir_710+"T1tttt_1025_625*.root");
+void ReadChains(TChain *chain[], TString folder, TString LegNames[]);
 
-  TH1F *h1_qcd_711    = InitTH1F("h1_qcd_711", "h1_qcd_711",  Nbins, BeginRange, EndRange); 
-  TH1F *h1_1025_711   = InitTH1F("h1_1025_711", "h1_1025_711", Nbins, BeginRange, EndRange); 
-  TH1F *h1_qcd_710    = InitTH1F("h1_qcd_710", "h1_qcd_710",  Nbins, BeginRange, EndRange); 
-  TH1F *h1_1025_710   = InitTH1F("h1_1025_710", "h1_1025_710", Nbins, BeginRange, EndRange); 
-  
-  ch_qcd_711->Draw(Form("%s>>h1_qcd_711",var.Data()), "weight*0.14/19600", "goff");
-  ch_1025_711->Draw(Form("%s>>h1_1025_711",var.Data()), "weight*0.14/19600", "goff");
-  ch_qcd_710->Draw(Form("%s>>h1_qcd_710",var.Data()), "weight*0.14/19600", "goff");
-  ch_1025_710->Draw(Form("%s>>h1_1025_710",var.Data()), "weight*0.14/19600", "goff");
+class hfeats {
+public:
+  hfeats(TString ivarname, int inbins, float iminx, float imaxx, TString ititle="", TString icuts="1"){
+    varname = ivarname; nbins = inbins; minx = iminx; maxx = imaxx; title = ititle;
+    cuts = icuts;
+    tag = ivarname+"_"+cuts; tag.ReplaceAll("_1",""); 
+    tag.ReplaceAll("(",""); tag.ReplaceAll("$","");  tag.ReplaceAll(")",""); 
+    tag.ReplaceAll("/","_"); tag.ReplaceAll("*",""); tag.ReplaceAll("&&","_");
+    tag.ReplaceAll(">",""); tag.ReplaceAll("<",""); tag.ReplaceAll("=","");
+  }
+  TString title, varname, tag, cuts;
+  int nbins;
+  float minx, maxx;
+};
 
-  TString XTitle; 
-  if(var=="onht") XTitle = "HLT HT (GeV)";
-  if(var=="onmet") XTitle = "HLT MET (GeV)";
-  if(var=="(genht-onht)/genht") XTitle = "#frac{gen HT  - HLT HT}{gen HT}";
+void hltdistributions(TString folder="root/hlt/ht200/") { 
+  styles style("Standard"); style.nDivisions = 708; style.setDefaultStyle();
+  vector<hfeats> vars;
+  TCanvas can;
 
-  //h1cosmetic(TH1F* &h1, char* title, int linecolor=kRed, int linewidth=1, int fillcolor=0, TString var="")
-  h1cosmetic(h1_qcd_711, "", kRed, 2, 0, XTitle);
-  h1cosmetic(h1_1025_711, "1025_711", kBlue, 2, 0, XTitle);
-  h1cosmetic(h1_qcd_710, "", kRed, 4, 0, XTitle);
-  h1cosmetic(h1_1025_710, "1025_710", kBlue, 4, 0, XTitle);
-  h1_qcd_710->SetLineStyle(4); 
-  h1_1025_710->SetLineStyle(4); 
+  //vars.push_back(hfeats("mindr_mu",30,0,3,"Minimum #DeltaR(#mu,jet)","onht>500"));
+  //vars.push_back(hfeats("mindr2_mu",25,0,5,"2nd minimum #DeltaR(#mu,jet)","onht>500"));
+  vars.push_back(hfeats("Sum$(jets_pt>40)",15,-0.5,14.5,"Number of jets with p_{T} > 40 GeV","onht>500"));
+  //vars.push_back(hfeats("Sum$(jets_pt>60)",15,-0.5,14.5,"Number of jets with p_{T} > 60 GeV","onht>500"));
+  // vars.push_back(hfeats("Sum$(jets_pt>40)",15,-0.5,14.5,"Number of jets with p_{T} > 40 GeV"));
+  // vars.push_back(hfeats("Sum$(jets_pt>60)",15,-0.5,14.5,"Number of jets with p_{T} > 60 GeV"));
+  // vars.push_back(hfeats("onht",50,0,2500,"HLT H_{T} (GeV)"));
+  // vars.push_back(hfeats("onmet",50,0,750,"HLT MET (GeV)"));
+  // vars.push_back(hfeats("Max$(mus_pt)",29,5,150,"Leading #mu p_{T} (GeV)"));
+  // vars.push_back(hfeats("Max$(els_pt)",29,5,150,"Leading e p_{T} (GeV)"));
+  // vars.push_back(hfeats("Max$(mus_pt)",29,5,150,"Leading #mu p_{T} (GeV)","onht>500&&onmet>50"));
+  // vars.push_back(hfeats("Max$(els_pt)",29,5,150,"Leading e p_{T} (GeV)","onht>500&&onmet>50"));
+  // vars.push_back(hfeats("Max$(genmus_pt)",29,5,150,"Leading gen #mu p_{T} (GeV)","onht>500&&onmet>50"));
+  // vars.push_back(hfeats("Max$(genels_pt)",29,5,150,"Leading gen e p_{T} (GeV)","onht>500&&onmet>50"));
+  // vars.push_back(hfeats("Max$(lep_pt*(abs(lep_id)==13))",29,5,150,"Leading reco #mu p_{T} (GeV)",
+  //  			"onht>500&&onmet>50&&abs(lep_id)==13"));
+  // vars.push_back(hfeats("Max$(lep_pt*(abs(lep_id)==11))",29,5,150,"Leading reco e p_{T} (GeV)",
+  //  			"onht>500&&onmet>50&&abs(lep_id)==11"));
 
-  h1_qcd_711->Scale(1./h1_qcd_711->Integral());
-  h1_1025_711->Scale(1./h1_1025_711->Integral());
-  h1_qcd_710->Scale(1./h1_qcd_710->Integral());
-  h1_1025_710->Scale(1./h1_1025_710->Integral());
+  vector<int> indchain;
+  indchain.push_back(0); //(1025,625)
+  indchain.push_back(1); //(1200,800)
+  indchain.push_back(2); //(1500,100)
+  indchain.push_back(5); //Wjets
+  indchain.push_back(3); //QCD
+  indchain.push_back(4); //tt
 
-
-  TCanvas *c = new TCanvas();
-  c->cd(1);
-  h1_qcd_711->SetMaximum(h1_qcd_711->GetMaximum()*1.7);
-  if(var=="(genht-onht)/genht") {
-    h1_qcd_711->GetXaxis()->SetTitleOffset(1.2);
-    c->cd(1)->SetBottomMargin(0.15);
-  }  
-  h1_qcd_711->Draw("hist");
-  h1_1025_711->Draw("hist same");
-  h1_qcd_710->Draw("hist same");
-  h1_1025_710->Draw("hist same");
-
-  double legX = 0.4, legY = 0.93;
-  double legW = 0.35, legH = 0.25;
+  double legX = 0.56, legY = 0.93;
+  double legW = 0.12, legH = 0.061*indchain.size();
   TLegend leg(legX, legY-legH, legX+legW, legY);
   leg.SetTextSize(0.056); leg.SetFillColor(0); leg.SetFillStyle(0); leg.SetBorderSize(0);
   leg.SetTextFont(132);
-  leg.SetFillColor(kWhite);
-  leg.SetLineColor(kWhite);
-  leg.SetShadowColor(kWhite);
-  leg.AddEntry(h1_qcd_711,    Form(" 711 QCD [mean = %.2f]", h1_qcd_711->GetMean()),                 "l");
-  leg.AddEntry(h1_qcd_710,    Form(" 710 QCD [mean = %.2f]", h1_qcd_710->GetMean()),                 "l");
-  leg.AddEntry(h1_1025_711,   Form(" 711 T1tttt(1025,625) [mean = %.2f]", h1_1025_711->GetMean()),   "l");
-  leg.AddEntry(h1_1025_710,   Form(" 710 T1tttt(1025,625) [mean = %.2f]", h1_1025_710->GetMean()),   "l");
-  leg.Draw();
+  int hcolors[] = {28,8,6,1,4,2};
+  int hstyles[] = {2,2,2,1,1,1};
+  int hwidths[] = {4,4,4,2,2,2};
+  vector<TH1F*> histo[2][NSam];
+  TChain *chain[NSam];
+  TString lepfolders[] = {"el15", "mu15"}, currentfolder, legnames[NSam];
+  TString hname, pname, variable, leghisto, totcut, title;
+  for(int lep(0); lep<2; lep++){
+    currentfolder = folder + lepfolders[lep];
+    ReadChains(chain, currentfolder, legnames);
+    for(unsigned var(0); var<vars.size(); var++){
+      if(vars[var].varname.Contains("el") && !lepfolders[lep].Contains("el")) continue;
+      if(vars[var].varname.Contains("mu") && !lepfolders[lep].Contains("mu")) continue;
 
+      title = vars[var].cuts; if(title=="1") title = "";
+      title.ReplaceAll(">", " > "); title.ReplaceAll("&&", ", "); 
+      title.ReplaceAll("onmet", "MET"); title.ReplaceAll("onht", "H_{T}"); 
+      leg.Clear();
+      float maxhisto(-999);
+      for(unsigned sam(0); sam < indchain.size(); sam++){
+	hname = "histo"; hname += lep; hname += var; hname += sam;
+	histo[lep][var].push_back(new TH1F(hname, title, vars[var].nbins, vars[var].minx, vars[var].maxx));
+	histo[lep][var][sam]->SetLineColor(hcolors[indchain[sam]]);
+	histo[lep][var][sam]->SetLineStyle(hstyles[indchain[sam]]);
+	histo[lep][var][sam]->SetLineWidth(hwidths[indchain[sam]]);
+	totcut = "weight*("+vars[var].cuts+")";
+	variable = vars[var].varname;
+	if(indchain[sam]==1||indchain[sam]==2||indchain[sam]==5){
+	  if(variable == "Max$(mus_pt)") variable = "onmupt";
+	  if(variable == "Max$(els_pt)") variable = "onelpt";
+	}
+	chain[indchain[sam]]->Project(hname, variable, totcut);
+	histo[lep][var][sam]->Scale(100./histo[lep][var][sam]->Integral());
+	if(sam==0){
+	  histo[lep][var][sam]->SetXTitle(vars[var].title);
+	  histo[lep][var][sam]->SetYTitle("Entries (%)");
+	  histo[lep][var][sam]->Draw();
+	} else histo[lep][var][sam]->Draw("same");
+	if(maxhisto < histo[lep][var][sam]->GetMaximum()) maxhisto = histo[lep][var][sam]->GetMaximum();
+	leghisto = legnames[indchain[sam]]+" [#mu = ";
+	leghisto += RoundNumber(histo[lep][var][sam]->GetMean(),1) + "]";
+	leg.AddEntry(histo[lep][var][sam], leghisto);
+      } // Loop over samples
+      histo[lep][var][0]->SetMaximum(maxhisto*1.1);
+      leg.Draw();
+      pname = "plots/hltstudy/"+lepfolders[lep]+"_"+vars[var].tag+".eps";
+      can.SaveAs(pname);
+    }// Loop over variables
+  }// Loop over el15 and mu15
 
-  TString FileName = var;  
-  if(var=="(genht-onht)/genht") FileName = "HTres";
-  c->Print(Form("plots/hltstudy/dist_%s_%s.eps", FileName.Data(), isMu?"M":"E"));
-
+  for(int lep(0); lep<2; lep++)
+    for(unsigned var(0); var<vars.size(); var++){
+      if(vars[var].varname.Contains("el") && !lepfolders[lep].Contains("el")) continue;
+      if(vars[var].varname.Contains("mu") && !lepfolders[lep].Contains("mu")) continue;
+      for(unsigned sam(0); sam < indchain.size(); sam++)
+	if(histo[lep][var][sam]) histo[lep][var][sam]->Delete();
+    }
 }
 
-void hltdistributions() { 
-  styles style("Standard"); style.setDefaultStyle();
+void ReadChains(TChain *chain[], TString folder, TString LegNames[]){
+  TString FileNames[] = 
+    {folder+"/*T1tttt*1025_*", 
+     folder+"/*T1tttt*1200_*", 
+     folder+"/*T1tttt*1500_*", 
+     folder+"/*QCD*",
+     folder+"/*TT*",
+     folder+"/*WJets*"};
+  LegNames[0] = "T1tttt(1025,625)";
+  LegNames[1] = "T1tttt(1200,800)";
+  LegNames[2] = "T1tttt(1500,100)";
+  LegNames[3] = "QCD";
+  LegNames[4] = "t#bar{t}";
+  LegNames[5] = "W+jets";
 
-  Draw1D("onht",false,50,0,2000);
-  Draw1D("onht",true,50,0,2000);
-  Draw1D("onmet",false,50,0,500);
-  Draw1D("onmet",true,50,0,500);
-  Draw1D("(genht-onht)/genht",false,50,-1,1);
-  Draw1D("(genht-onht)/genht",true,50,-1,1);
-
+  for(int sam(0); sam < NSam; sam++){
+    chain[sam] = new TChain("tree");
+    chain[sam]->Add(FileNames[sam]);
+  }// Loop over samples
 }
