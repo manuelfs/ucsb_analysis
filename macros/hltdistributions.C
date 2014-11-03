@@ -5,7 +5,7 @@
 #include "src/ucsb_utils.cpp"
 
 #include "TChain.h"
-#include "TH1F.h"
+#include "TH1D.h"
 #include "TCanvas.h"
 #include "TLegend.h"
 #include "TLine.h"
@@ -25,11 +25,25 @@ public:
 	 TString ititle="", TString icuts="1", float icut=-1){
     varname = ivarname; nbins = inbins; minx = iminx; maxx = imaxx; title = ititle;
     cuts = icuts; cut = icut; samples = isamples;
-    tag = ivarname+"_"+cuts; tag.ReplaceAll("_1",""); tag.ReplaceAll(".",""); 
+    tag = ivarname+"_"+cuts; 
+    tag.ReplaceAll("Max$(els_pt*(abs(els_eta)<1.479))>=15", "Barrel");
+    tag.ReplaceAll("Max$(els_pt*(abs(els_eta)>=1.479))>=15", "Endcap");
+    tag.ReplaceAll("Max$(mus_pt*(abs(mus_eta)<1.479))>=15", "Barrel");
+    tag.ReplaceAll("Max$(mus_pt*(abs(mus_eta)>=1.479))>=15", "Endcap");
+    tag.ReplaceAll("+(els_pt<15)*10000+(abs(els_eta)>1.479)*10000)",""); 
+    tag.ReplaceAll("+(els_pt<15)*10000+(abs(els_eta)<=1.479)*10000)",""); 
+    tag.ReplaceAll("+(mus_pt<15)*10000+(abs(mus_eta)>1.479)*10000)",""); 
+    tag.ReplaceAll("+(mus_pt<15)*10000+(abs(mus_eta)<=1.479)*10000)",""); 
+    tag.ReplaceAll("Max$(els_pt*(els_eta<1.479&&els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03))>=15", "Barrel");
+    tag.ReplaceAll("Max$(els_pt*(abs(els_eta)>=1.479&&els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03))>=15", "Endcap");
+    tag.ReplaceAll("Min$(",""); 
+    tag.ReplaceAll("+(els_eta>=1.479||els_clustershape>=0.011||els_he>=0.15||els_eminusp>=0.012||els_deta>=0.005||els_dphi>=0.03)*10000)",""); 
+    tag.ReplaceAll("+(abs(els_eta)<1.479||els_clustershape>=0.033||els_he>=0.20||els_eminusp>=0.009||els_deta>=0.010||els_dphi>=0.03)*10000)",""); 
+    tag.ReplaceAll("_1",""); tag.ReplaceAll(".",""); 
     tag.ReplaceAll("(",""); tag.ReplaceAll("$","");  tag.ReplaceAll(")",""); 
-    tag.ReplaceAll("[",""); tag.ReplaceAll("]",""); 
+    tag.ReplaceAll("[",""); tag.ReplaceAll("]",""); tag.ReplaceAll("|",""); 
     tag.ReplaceAll("/","_"); tag.ReplaceAll("*",""); tag.ReplaceAll("&&","_");
-    tag.ReplaceAll(">",""); tag.ReplaceAll("<",""); tag.ReplaceAll("=","");
+    tag.ReplaceAll(">","g"); tag.ReplaceAll("<","s"); tag.ReplaceAll("=","");
     tag.ReplaceAll("+",""); tag.ReplaceAll("s_pt1510000",""); 
   }
   TString title, varname, tag, cuts;
@@ -38,8 +52,9 @@ public:
   vector<int> samples;
 };
 
-void hltdistributions(TString folder="root/hlt/noiso") { 
-  styles style("Standard"); style.nDivisions = 708; style.setDefaultStyle();
+//void hltdistributions(TString folder="root/hlt/oct24_720pre8/") { 
+void hltdistributions(TString folder="root/hlt/nov2_noseedgt/") { 
+  styles style("Standard"); style.nDivisions = 708; style.setDefaultStyle(); gStyle->SetPadTickY(1); 
   vector<hfeats> vars;
   TCanvas can;
   int inilep(0), endlep(2);
@@ -58,6 +73,7 @@ void hltdistributions(TString folder="root/hlt/noiso") {
   qcd_tt_sig.push_back(4); //tt
 
   vector<int> qcd_tt_w_sig;
+  qcd_tt_w_sig.push_back(2); //(1500,100)
   qcd_tt_w_sig.push_back(0); //(1025,625)
   qcd_tt_w_sig.push_back(5); //Wjets
   qcd_tt_w_sig.push_back(3); //QCD
@@ -67,6 +83,44 @@ void hltdistributions(TString folder="root/hlt/noiso") {
   mini_sig.push_back(1); //(1200,800)
   mini_sig.push_back(2); //(1500,100)
 
+    // vars.push_back(hfeats("Min$(els_trackiso+(els_pt<15)*10000+(abs(els_eta)>1.479)*10000)",21,0,0.21,qcd_tt_w_sig,
+    // 			  "Electron track relative isolation","Max$(els_pt*(abs(els_eta)<1.479))>=15",0.05));
+    // vars.push_back(hfeats("Min$(els_trackiso+(els_pt<15)*10000+(abs(els_eta)<=1.479)*10000)",21,0,0.21,qcd_tt_w_sig,
+    // 			  "Electron track relative isolation","Max$(els_pt*(abs(els_eta)>=1.479))>=15",0.05));
+
+    // vars.push_back(hfeats("Min$(els_ecaliso+(els_pt<15)*10000+(abs(els_eta)>1.479)*10000)",33,0,0.66,qcd_tt_w_sig,
+    // 			  "Electron ECAL relative isolation","Max$(els_pt*(abs(els_eta)<1.479))>=15",0.16));
+    // vars.push_back(hfeats("Min$(els_ecaliso+(els_pt<15)*10000+(abs(els_eta)<=1.479)*10000)",49,0,0.49,qcd_tt_w_sig,
+    // 			  "Electron ECAL relative isolation","Max$(els_pt*(abs(els_eta)>=1.479))>=15",0.12));
+
+    // vars.push_back(hfeats("Min$(els_hcaliso+(els_pt<15)*10000+(abs(els_eta)>1.479)*10000)",41,0,0.82,qcd_tt_w_sig,
+    //  			  "Electron HCAL relative isolation","Max$(els_pt*(abs(els_eta)<1.479))>=15",0.2));
+    // vars.push_back(hfeats("Min$(els_hcaliso+(els_pt<15)*10000+(abs(els_eta)<=1.479)*10000)",41,0,1.23,qcd_tt_w_sig,
+    // 			  "Electron HCAL relative isolation","Max$(els_pt*(abs(els_eta)>=1.479))>=15",0.3));
+
+    // vars.push_back(hfeats("Min$(mus_reliso+(mus_pt<15)*10000+(abs(mus_eta)>1.479)*10000)",51,0,1.02,qcd_tt_w_sig,
+    //  			  "Muon total relative isolation","Max$(mus_pt*(abs(mus_eta)<1.479))>=15",0.15));
+    // vars.push_back(hfeats("Min$(mus_reliso+(mus_pt<15)*10000+(abs(mus_eta)<=1.479)*10000)",51,0,1.02,qcd_tt_w_sig,
+    //  			  "Muon total relative isolation","Max$(mus_pt*(abs(mus_eta)>=1.479))>=15",0.15));
+
+  /////////// With Electron ID /////////////////
+  // vars.push_back(hfeats("Min$(els_ecaliso+(els_eta>=1.479||els_clustershape>=0.011||els_he>=0.15||els_eminusp>=0.012||els_deta>=0.005||els_dphi>=0.03)*10000)",33,0,0.66,qcd_tt_w_sig,
+  // 			"Electron ECAL relative isolation","Max$(els_pt*(els_eta<1.479&&els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03))>=15",0.16));
+  // vars.push_back(hfeats("Min$(els_ecaliso+(abs(els_eta)<1.479||els_clustershape>=0.033||els_he>=0.20||els_eminusp>=0.009||els_deta>=0.010||els_dphi>=0.03)*10000)",33,0,0.66,qcd_tt_w_sig,
+  // 			"Electron ECAL relative isolation","Max$(els_pt*(abs(els_eta)>=1.479&&els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03))>=15",0.16));
+
+  // vars.push_back(hfeats("Min$(els_hcaliso+(els_eta>=1.479||els_clustershape>=0.011||els_he>=0.15||els_eminusp>=0.012||els_deta>=0.005||els_dphi>=0.03)*10000)",41,0,0.82,qcd_tt_w_sig,
+  // 			"Electron HCAL relative isolation","Max$(els_pt*(els_eta<1.479&&els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03))>=15",0.2));
+  // vars.push_back(hfeats("Min$(els_hcaliso+(abs(els_eta)<1.479||els_clustershape>=0.033||els_he>=0.20||els_eminusp>=0.009||els_deta>=0.010||els_dphi>=0.03)*10000)",41,0,1.23,qcd_tt_w_sig,
+  // 			"Electron HCAL relative isolation","Max$(els_pt*(abs(els_eta)>=1.479&&els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03))>=15",0.3));
+
+  vars.push_back(hfeats("Min$(els_he+(els_eta>=1.479||els_clustershape>=0.011||els_eminusp>=0.012||els_deta>=0.005||els_dphi>=0.03)*10000)",100,0,1,qcd_tt_w_sig,
+  			"Electron H/E","Max$(els_pt*(els_eta<1.479&&els_clustershape<0.011&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03))>=15",0.15));
+  vars.push_back(hfeats("Min$(els_he+(abs(els_eta)<1.479||els_clustershape>=0.033||els_eminusp>=0.009||els_deta>=0.010||els_dphi>=0.03)*10000)",100,0,1,qcd_tt_w_sig,
+  			"Electron H/E","Max$(els_pt*(abs(els_eta)>=1.479&&els_clustershape<0.033&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03))>=15",0.2));
+    
+  // "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)||abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
+
   // Variables only in root/hlt/sep10/ht200
   if(folder.Contains("ht200")){
     // vars.push_back(hfeats("mindr_mu",25,0,2.5, qcd_tt_sig, "Minimum #DeltaR(#mu,jet)"));
@@ -75,27 +129,28 @@ void hltdistributions(TString folder="root/hlt/noiso") {
     vars.push_back(hfeats("Max$(genels_pt)",29,5,150,mini_sig,"Leading gen e p_{T} (GeV)"));
     vars.push_back(hfeats("Max$(genmus_pt)",29,5,150,mini_sig,"Leading #mu gen p_{T} (GeV)"));
   } else {
-    vars.push_back(hfeats("onht",50,0,2500, allsamples, "HLT H_{T} (GeV)"));
-    vars.push_back(hfeats("onmet",50,0,750, allsamples,"HLT MET (GeV)"));
-    vars.push_back(hfeats("abs(jets_phi[0]-jets_phi[1])*(abs(jets_phi[0]-jets_phi[1])<3.1416)+(2*3.1416-abs(jets_phi[0]-jets_phi[1]))*(abs(jets_phi[0]-jets_phi[1])>=3.1416)",63,0,3.15, qcd_tt_sig, "#Delta#phi(jet1,jet2)"));
-    vars.push_back(hfeats("Sum$(jets_pt>40)",16,-0.5,15.5, allsamples, "Number of jets with p_{T} > 40 GeV","onht>400"));
-    vars.push_back(hfeats("Sum$(jets_pt>60)",16,-0.5,15.5, allsamples, "Number of jets with p_{T} > 60 GeV","onht>400"));
+    // vars.push_back(hfeats("onht",50,0,2500, allsamples, "HLT H_{T} (GeV)"));
+    // vars.push_back(hfeats("onmet",50,0,750, allsamples,"HLT MET (GeV)"));
+    // vars.push_back(hfeats("abs(jets_phi[0]-jets_phi[1])*(abs(jets_phi[0]-jets_phi[1])<3.1416)+(2*3.1416-abs(jets_phi[0]-jets_phi[1]))*(abs(jets_phi[0]-jets_phi[1])>=3.1416)",63,0,3.15, qcd_tt_sig, "#Delta#phi(jet1,jet2)"));
+    // vars.push_back(hfeats("Sum$(jets_pt>40)",16,-0.5,15.5, allsamples, "Number of jets with p_{T} > 40 GeV","onht>400"));
+    // vars.push_back(hfeats("Sum$(jets_pt>60)",16,-0.5,15.5, allsamples, "Number of jets with p_{T} > 60 GeV","onht>400"));
 
-    vars.push_back(hfeats("Max$(els_pt)",29,5,150,qcd_tt_sig,"Leading e p_{T} (GeV)"));
-    vars.push_back(hfeats("Max$(els_pt)",29,5,150,qcd_tt_sig,"Leading e p_{T} (GeV)","iso5x"));
-    vars.push_back(hfeats("Min$(els_trackiso+(els_pt<15)*10000)",26,0,0.26,qcd_tt_w_sig,"Electron track relative isolation","1",0.05));
-    vars.push_back(hfeats("Min$(els_ecaliso+(els_pt<15)*10000)",51,0,1.02,qcd_tt_w_sig,"Electron ECAL relative isolation","1",0.2));
-    vars.push_back(hfeats("Min$(els_hcaliso+(els_pt<15)*10000)",56,0,0.56,qcd_tt_w_sig,"Electron HCAL relative isolation","1",0.11));
-    vars.push_back(hfeats("Min$(els_reliso+(els_pt<15)*10000)",50,0,1.7,qcd_tt_w_sig,"Electron total relative isolation","1",0.36));
+    // vars.push_back(hfeats("Max$(els_pt)",29,5,150,qcd_tt_sig,"Leading e p_{T} (GeV)"));
+    // vars.push_back(hfeats("Max$(els_pt)",29,5,150,qcd_tt_sig,"Leading e p_{T} (GeV)","iso5x"));
+    // vars.push_back(hfeats("Min$(els_reliso+(els_pt<15)*10000)",50,0,1.7,qcd_tt_w_sig,"Electron total relative isolation","1",0.36));
   
-    vars.push_back(hfeats("Max$(mus_pt)",29,5,150,qcd_tt_sig,"Leading #mu HLT p_{T} (GeV)"));
-    vars.push_back(hfeats("Max$(mus_pt)",29,5,150,qcd_tt_sig,"Leading #mu HLT p_{T} (GeV)","iso5x"));
-    vars.push_back(hfeats("Min$(mus_reliso+(mus_pt<15)*10000)",51,0,1.02,qcd_tt_w_sig,"Muon total relative isolation","1",0.15));
+    // vars.push_back(hfeats("Max$(mus_pt)",29,5,150,qcd_tt_sig,"Leading #mu HLT p_{T} (GeV)"));
+    // vars.push_back(hfeats("Max$(mus_pt)",29,5,150,qcd_tt_sig,"Leading #mu HLT p_{T} (GeV)","iso5x"));
+
+
+
+
+
   }
 
 
-  double legX = 0.56, legY = 0.93;
-  double legW = 0.12, legH = 0.061*2;
+  double legX = 0.56, legY = 0.92;
+  double legW = 0.12, legH = 0.061*5;
   TLegend leg(legX, legY-legH, legX+legW, legY);
   leg.SetTextSize(0.056); leg.SetFillColor(0); leg.SetFillStyle(0); leg.SetBorderSize(0);
   leg.SetTextFont(132);
@@ -108,8 +163,8 @@ void hltdistributions(TString folder="root/hlt/noiso") {
   int hstyles[] = {2,2,2,1,1,1};
   int hwidths[] = {4,4,4,2,2,2};
 
-  vector< vector<TH1F*> > histo[2];
-  vector<TH1F*> varhisto;
+  vector< vector<TH1D*> > histo[2];
+  vector<TH1D*> varhisto;
   TChain *chain[NSam];
   TString lepfolders[] = {"el15", "mu15"}, currentfolder, legnames[NSam];
   TString hname, pname, variable, leghisto, totCut, title;
@@ -118,6 +173,12 @@ void hltdistributions(TString folder="root/hlt/noiso") {
     ReadChains(chain, currentfolder, legnames);
     for(unsigned var(0); var<vars.size(); var++){
       title = vars[var].cuts; if(title=="1") title = "";
+      title.ReplaceAll("Max$(els_pt*(els_eta<1.479&&els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03))>=15", "Barrel");
+      title.ReplaceAll("Max$(els_pt*(abs(els_eta)>=1.479&&els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03))>=15", "Endcap");
+      title.ReplaceAll("Max$(els_pt*(abs(els_eta)<1.479))>=15", "Barrel");
+      title.ReplaceAll("Max$(els_pt*(abs(els_eta)>=1.479))>=15", "Endcap");
+      title.ReplaceAll("Max$(mus_pt*(abs(mus_eta)<1.479))>=15", "Barrel");
+      title.ReplaceAll("Max$(mus_pt*(abs(mus_eta)>=1.479))>=15", "Endcap");
       title.ReplaceAll("els_pt","p^{e}_{T}");title.ReplaceAll("mus_pt","p^{#mu}_{T}");
       title.ReplaceAll("Sum$(jets_pt>40)","n_{jets}^{40}");title.ReplaceAll("abs(lep_id)==13&&","");
       title.ReplaceAll(">=", " #geq "); title.ReplaceAll(">", " > "); title.ReplaceAll("&&", ", "); 
@@ -127,11 +188,10 @@ void hltdistributions(TString folder="root/hlt/noiso") {
       leg.Clear();
       float maxhisto(-999);
 
-      variable = vars[var].varname;
       varhisto.resize(0);
       for(unsigned sam(0); sam < vars[var].samples.size(); sam++){
 	hname = "histo"; hname += lep; hname += var; hname += sam;
-	varhisto.push_back(new TH1F(hname, title, vars[var].nbins, vars[var].minx, vars[var].maxx));
+	varhisto.push_back(new TH1D(hname, title, vars[var].nbins, vars[var].minx, vars[var].maxx));
       }
       histo[lep].push_back(varhisto);
       if((vars[var].varname.Contains("els")||vars[var].varname.Contains("11")) 
@@ -140,20 +200,22 @@ void hltdistributions(TString folder="root/hlt/noiso") {
 	 && !lepfolders[lep].Contains("mu")) continue;
 
       for(unsigned sam(0); sam < vars[var].samples.size(); sam++){
+	variable = vars[var].varname; // Assigned here to change it for signal
 	histo[lep][var][sam]->SetLineColor(hcolors[vars[var].samples[sam]]);
 	histo[lep][var][sam]->SetLineStyle(hstyles[vars[var].samples[sam]]);
 	histo[lep][var][sam]->SetLineWidth(hwidths[vars[var].samples[sam]]);
 	totCut = "weight*("+vars[var].cuts+")";
-	if(variable.Contains("iso") && vars[var].samples[sam]==0){
-	  if(lepfolders[lep].Contains("el")) totCut = "weight*wl1ht200*(Max$(genels_pt[0])>0&&"+vars[var].cuts+")";
-	  else totCut = "weight*wl1ht200*(Max$(genmus_pt[0])>0&&"+vars[var].cuts+")";
+	if(legnames[vars[var].samples[sam]].Contains("T1tttt")){
+	  if(lepfolders[lep].Contains("el")) {
+	    totCut.ReplaceAll("els_pt*(","els_pt*(els_genpt>=0&&");
+	    variable.ReplaceAll("1.479","1.479&&els_genpt>=0");
+	  } else {
+	    totCut.ReplaceAll("mus_pt*(","els_pt*(mus_genpt>=0&&");
+	    variable.ReplaceAll("1.479","1.479&&mus_genpt>=0");
+	  }
 	}      
 	if(lepfolders[lep].Contains("el")) totCut.ReplaceAll("iso5x", eliso5x);
 	else 	totCut.ReplaceAll("iso5x", muiso5x);
-	if(vars[var].samples[sam]==1||vars[var].samples[sam]==2){
-	  if(variable == "Max$(mus_pt)") variable = "onmupt";
-	  if(variable == "Max$(els_pt)") variable = "onelpt";
-	}
 	chain[vars[var].samples[sam]]->Project(histo[lep][var][sam]->GetName(), variable, totCut);
 	if(variable.Contains("iso")){
 	  histo[lep][var][sam]->SetBinContent(vars[var].nbins,
@@ -178,7 +240,7 @@ void hltdistributions(TString folder="root/hlt/noiso") {
       legH = 0.061*vars[var].samples.size(); leg.SetY1NDC(legY-legH);
       leg.Draw(); 
       if(vars[var].cut>0) line.DrawLine(vars[var].cut, 0, vars[var].cut, maxhisto*1.1);
-      pname = "plots/hltstudy/"+lepfolders[lep]+"_"+vars[var].tag+".png";
+      pname = "plots/hltstudy/"+lepfolders[lep]+"_"+vars[var].tag+".eps";
       can.SaveAs(pname);
     }// Loop over variables
   }// Loop over el15 and mu15
@@ -193,9 +255,10 @@ void hltdistributions(TString folder="root/hlt/noiso") {
 void ReadChains(TChain *chain[], TString folder, TString LegNames[]){
   TString FileNames[] = 
     {folder+"/*T1tttt*1025_*", 
-     folder+"/*T1tttt*1200_*", 
-     folder+"/*T1tttt*1500_*", 
-     folder+"/*QCD*",
+     folder+"/*T1tttt*1200_*PU20*", 
+     folder+"/*T1tttt*1500_*PU20*", 
+     //folder+"/*QCD*",
+     folder+"/*QCD*300to*",
      folder+"/*TT*",
      folder+"/W*"};
   LegNames[0] = "T1tttt(1025,625)";

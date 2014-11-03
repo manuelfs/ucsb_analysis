@@ -26,7 +26,7 @@
 #include "TMath.h"
 
 #define NSam 6
-#define NCuts 3
+#define NCuts 1
 
 using namespace std;
 using std::cout;
@@ -34,7 +34,7 @@ using std::endl;
 
 void ReadChains(TChain *chain[], int entries[], TString folder);
 
-void hltstudy(TString folder="root/hlt/el15noiso/", TString addtitle = ""){
+void hltstudy(TString folder="root/hlt/nov2_noseedgt/el15/", TString addtitle = ""){
   styles style("2Dtitle"); style.setDefaultStyle(); gStyle->SetPaintTextFormat("4.1f");
   gStyle->SetHatchesLineWidth(2);
   TCanvas can;
@@ -59,14 +59,28 @@ void hltstudy(TString folder="root/hlt/el15noiso/", TString addtitle = ""){
   TString zTitle = "HLT rate (Hz)";
   TH2F *hRate[2][NCuts][NSam+1], *hContour[NCuts][4];
 
-  TString eliso5x = "Max$(els_pt*(els_trackiso<0.25&&(els_eta<1.479&&els_ecaliso<1||els_eta>=1.479&&els_ecaliso<0.75)&&els_hcaliso<0.55))>15";
-  TString muiso5x = "Max$(mus_pt*(mus_reliso<1))>15";
-  TString Cuts[] = {"1", "iso5x", "iso5x&&Max$(bjets_csv*(bjets_pt>40))>0.7"};
-  TString Tags[] = {"noiso", "iso5x", "iso5xbtag"};
-  TString TitleCuts[] = {"", ", RelIso < iso5x", ", RelIso < iso5x, CSV > 0.7"};
-  // TString tagfolder = folder;
-  // if(tagfolder[tagfolder.Sizeof()-2] == '/') tagfolder.Remove(tagfolder.Sizeof()-2);
-  // tagfolder.Remove(0,tagfolder.Last('/')+1);
+   TString muiso5x = "Max$(mus_pt*(mus_reliso<1))>15";
+
+  // Standard cuts
+  //TString Cuts[] = {"1", "iso5x", "iso5x&&Max$(bjets_csv*(bjets_pt>40))>0.7"};
+  //TString Tags[] = {"noiso", "iso5x", "iso5xbtag"};
+   //TString eliso5x = "Max$(els_pt*(els_trackiso<0.25&&(els_eta<1.479&&els_ecaliso<1||els_eta>=1.479&&els_ecaliso<0.75)&&els_hcaliso<0.55))>15";
+   //TString TitleCuts[] = {"", ", RelIso < iso5x", ", RelIso < iso5x, CSV > 0.7"};
+
+   TString barrelcuts = "(els_ecaliso<0.16*factor&&els_hcaliso<0.2*factor&&els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)";
+   TString endcapcuts = "(els_ecaliso<0.12*factor&&els_hcaliso<0.3*factor&&els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)";
+  // For iso searching
+  TString Cuts[] = {"Max$(els_pt*(els_trackiso<0.05*factor&&(abs(els_eta)<1.479&&"+barrelcuts+"||abs(els_eta)>=1.479&&"+endcapcuts+")))>15", 
+		    "Max$(els_pt*(els_trackiso<0.05*factor&&(els_eta<1.479&&"+barrelcuts+"||els_eta>=1.479&&"+endcapcuts+")))>15", 
+		    "Max$(els_pt*(els_trackiso<0.05*factor&&(els_eta<1.479&&"+barrelcuts+"||els_eta>=1.479&&"+endcapcuts+")))>15"};
+  TString Tags[] = {"noiso", "iso4x", "iso4xbtag"};
+  TString eliso5x = "1";
+  TString TitleCuts[] = {", RelIso < 4xWP85", ", RelIso < 4xWP85", ", RelIso < 4xWP85, CSV > 0.7"};
+  int factors[] = {4, 4, 4};
+
+  TString tagfolder = folder;
+  if(tagfolder[tagfolder.Sizeof()-2] == '/') tagfolder.Remove(tagfolder.Sizeof()-2);
+  tagfolder.Remove(0,tagfolder.Last('/')+1);
 
   int nBinsHt = 14, nBinsMet = 14;
   float minHt=200, maxHt=900, minMet=0, maxMet=140;
@@ -93,6 +107,8 @@ void hltstudy(TString folder="root/hlt/el15noiso/", TString addtitle = ""){
   
   for(int icut(0); icut < NCuts; icut++){
     totCut = "1.4e-2/19600*weight*(" + Cuts[icut] + ")";
+    totCut.ReplaceAll("factor", RoundNumber(factors[icut],0));
+
     Title = "p_{T}^{#mu} > 15 GeV"+TitleCuts[icut];
     if(isEl) {
       Title.ReplaceAll("#mu","e");
@@ -186,17 +202,18 @@ void hltstudy(TString folder="root/hlt/el15noiso/", TString addtitle = ""){
       leg.AddEntry(hContour[icut][tag], legtag[tag]);
     }
     // Plotting rates and efficiencies
-    //Pnamebase = "plots/hltstudy/rate2d_"+tagfolder + "_"+Tags[icut]+ ".eps";
-    Pnamebase = "plots/hltstudy/rate2d_"+Tags[icut]+ ".png";
+    Pnamebase = "plots/hltstudy/unseeded_rate2d_"+tagfolder + "_"+Tags[icut]+ ".eps";
+    //Pnamebase = "plots/hltstudy/rate2d_"+Tags[icut]+ ".eps";
     for(int sam(0); sam < NSam+1; sam++){
-      if(Htag[sam].Contains("sig1200") ||Htag[sam].Contains("sig1500")) continue;
+      if(Htag[sam].Contains("sig1200")) continue;
+      //if(Htag[sam].Contains("sig1200") ||Htag[sam].Contains("sig1500")) continue;
       Pname = Pnamebase; 
       if(Htag[sam].Contains("sig")) {
     	Pname.ReplaceAll("rate2d", Htag[sam]+"effi2d");
     	can.SetLogz(0);
       } else {
-    	hRate[0][icut][sam]->SetMinimum(hRate[0][icut][2]->GetMinimum());
-    	hRate[0][icut][sam]->SetMaximum(2*hRate[0][icut][NSam]->GetMaximum());
+    	//hRate[0][icut][sam]->SetMinimum(hRate[0][icut][2]->GetMinimum());
+    	//hRate[0][icut][sam]->SetMaximum(2*hRate[0][icut][NSam]->GetMaximum());
     	Pname.ReplaceAll("rate2d", Htag[sam]+"rate2d");
     	can.SetLogz(1);
       }
@@ -224,8 +241,8 @@ void hltstudy(TString folder="root/hlt/el15noiso/", TString addtitle = ""){
 void ReadChains(TChain *chain[], int entries[], TString folder){
   TString FileNames[] = 
     {folder+"/*T1tttt*1025_*", 
-     folder+"/*T1tttt*1025_*", 
-     folder+"/*T1tttt*1025_*", 
+     folder+"/*T1tttt*1025_*PU20*", 
+     folder+"/*T1tttt*1500_*PU20*", 
      folder+"/*QCD*",
      folder+"/*TT*",
      folder+"/W*"};
