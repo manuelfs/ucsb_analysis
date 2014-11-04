@@ -21,7 +21,7 @@ void compare(vector<TString> chainname,
 	     TString variable, int nbins, float minX, float maxX, 
 	     TString title, TString xtitle, TString tag, vector<TString> leglabel, 
 	     TString cuts="1", bool dolog=false, TString treename="tree") { 
-  styles style("Standard"); style.PadTopMargin = 0.07; style.setDefaultStyle();
+  styles style("Standard"); style.PadTopMargin = 0.07; style.setDefaultStyle(); gStyle->SetPadTickY(1); 
   TCanvas can;
 
   double legX = 0.15, legY = 0.93;
@@ -45,12 +45,15 @@ void compare(vector<TString> chainname,
     histo[his]->SetYTitle("HLT rate [Hz] for L = 1.4 #times 10^{34} cm^{-2}s^{-1}");
     // histo[his]->Sumw2();
 
-    //totCut = "1.4e-2/19600*weight*(" + cuts + "&&els_genpt>=0)";
-    totCut = "1.4e-2/19600*weight*(" + cuts + ")";
+    totCut = "1.4e-2/19600*weight*(" + cuts + "&&els_genpt>=0)";
+    //totCut = "1.4e-2/19600*weight*(" + cuts + ")";
     chain.push_back(new TChain(treename));
     chain[his]->Add(chainname[his]);
     //cout<<totCut<<endl;
     chain[his]->Project(hname, variable, totCut);
+
+    histo[his]->SetBinContent(nbins, histo[his]->GetBinContent(nbins)+
+    			      histo[his]->GetBinContent(nbins+1));
 
     nentries[his] = histo[his]->Integral(0,nbins+1);
     //leglabel[his] += " [" + RoundNumber(nentries[his],0) + "]";
@@ -80,87 +83,87 @@ void compare(vector<TString> chainname,
 
 void compare2(){
 
-  vector<TString> qcd;
-  qcd.push_back("root/hlt/nov2_noseed/el15/QCD_Pt-120to170_Tune4C*");
-  qcd.push_back("root/hlt/nov2_noseedgt/el15/QCD_Pt-120to170_Tune4C*");
-  vector<TString> legnames;
-  legnames.push_back("720 unseeded, auto:upgradePLS1");
-  legnames.push_back("720 unseeded, MCRUN2_72_V1A::All");
-
-  compare(qcd,"onht", 100, 0, 1500, "15 GeV non-isolated HLT e, QCD", 
-  	  "H_{T} (GeV)", "qcd_onht_el15_noseed", legnames,
-  	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)||abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
-
-
-  // vector<TString> signal;
-  // signal.push_back("root/hlt/oct30_716elid/el15/*1500_*");
-  // signal.push_back("root/hlt/oct30_720elid/el15/*1500_*");
-  // signal.push_back("root/hlt/nov2_noseedgt/el15/*1500_*");
+  // vector<TString> qcd;
+  // qcd.push_back("root/hlt/nov2_noseed/el15/QCD_Pt-120to170_Tune4C*");
+  // qcd.push_back("root/hlt/nov2_noseedgt/el15/QCD_Pt-120to170_Tune4C*");
   // vector<TString> legnames;
-  // legnames.push_back("716");
-  // legnames.push_back("720pre8");
-  // legnames.push_back("720 unseeded");
+  // legnames.push_back("720 unseeded, auto:upgradePLS1");
+  // legnames.push_back("720 unseeded, MCRUN2_72_V1A::All");
 
-  // compare(signal,"els_clustershape", 60, 0, 0.03, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", 
-  // 	  "#sigmai#eta#eta", "signal_els_clustershape_elid_barrel", legnames,
-  // 	  "abs(els_eta)<1.479&&(els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)");
-  // compare(signal,"els_clustershape", 70, 0, 0.07, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", 
-  // 	  "#sigmai#eta#eta", "signal_els_clustershape_elid_endcap", legnames,
-  // 	  "abs(els_eta)>=1.479&&(els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
+  // compare(qcd,"onht", 100, 0, 1500, "15 GeV non-isolated HLT e, QCD", 
+  // 	  "H_{T} (GeV)", "qcd_onht_el15_noseed", legnames,
+  // 	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)||abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
 
 
-  // compare(signal,"els_he", 100, 0, 1, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "H/E", 
-  // 	  "signal_els_he_elid_barrel", legnames,
-  // 	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)");
-  // compare(signal,"els_he", 100, 0, 1, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "H/E", 
-  // 	  "signal_els_he_elid_endcap", legnames,
-  // 	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
+  vector<TString> signal;
+  signal.push_back("root/hlt/oct30_716elid/el15/*1500_*");
+  signal.push_back("root/hlt/oct30_720elid/el15/*1500_*");
+  signal.push_back("root/hlt/nov2_noseedgt/el15/*1500_*");
+  vector<TString> legnames;
+  legnames.push_back("716");
+  legnames.push_back("720pre8");
+  legnames.push_back("720 unseeded");
+
+  compare(signal,"els_clustershape", 60, 0, 0.03, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", 
+  	  "#sigmai#eta#eta", "signal_els_clustershape_elid_barrel", legnames,
+  	  "abs(els_eta)<1.479&&(els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)");
+  compare(signal,"els_clustershape", 70, 0, 0.07, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", 
+  	  "#sigmai#eta#eta", "signal_els_clustershape_elid_endcap", legnames,
+  	  "abs(els_eta)>=1.479&&(els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
 
 
-  // compare(signal,"els_eminusp", 60, 0, 0.09, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "1/E-1/p (GeV^{-1})", 
-  // 	  "signal_els_eminusp_elid_barrel", legnames,
-  // 	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_deta<0.005&&els_dphi<0.03)");
-  // compare(signal,"els_eminusp", 60, 0, 0.09, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "1/E-1/p (GeV^{-1})", 
-  // 	  "signal_els_eminusp_elid_endcap", legnames,
-  // 	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_deta<0.010&&els_dphi<0.03)");
+  compare(signal,"els_he", 100, 0, 1, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "H/E", 
+  	  "signal_els_he_elid_barrel", legnames,
+  	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)");
+  compare(signal,"els_he", 100, 0, 1, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "H/E", 
+  	  "signal_els_he_elid_endcap", legnames,
+  	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
 
 
-  // compare(signal,"els_deta", 50, 0, 0.03, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "#Delta#eta", 
-  // 	  "signal_els_deta_elid_barrel", legnames,
-  // 	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_dphi<0.03)");
-  // compare(signal,"els_deta", 50, 0, 0.03, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "#Delta#eta", 
-  // 	  "signal_els_deta_elid_endcap", legnames,
-  // 	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_dphi<0.03)");
+  compare(signal,"els_eminusp", 60, 0, 0.09, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "1/E-1/p (GeV^{-1})", 
+  	  "signal_els_eminusp_elid_barrel", legnames,
+  	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_deta<0.005&&els_dphi<0.03)");
+  compare(signal,"els_eminusp", 60, 0, 0.09, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "1/E-1/p (GeV^{-1})", 
+  	  "signal_els_eminusp_elid_endcap", legnames,
+  	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_deta<0.010&&els_dphi<0.03)");
 
 
-  // compare(signal,"els_dphi", 50, 0, 0.15, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "#Delta#phi", 
-  // 	  "signal_els_dphi_elid_barrel", legnames,
-  // 	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005)");
-  // compare(signal,"els_dphi", 50, 0, 0.15, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "#Delta#phi", 
-  // 	  "signal_els_dphi_elid_endcap", legnames,
-  // 	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010)");
+  compare(signal,"els_deta", 50, 0, 0.03, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "#Delta#eta", 
+  	  "signal_els_deta_elid_barrel", legnames,
+  	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_dphi<0.03)");
+  compare(signal,"els_deta", 50, 0, 0.03, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "#Delta#eta", 
+  	  "signal_els_deta_elid_endcap", legnames,
+  	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_dphi<0.03)");
 
 
-  // compare(signal,"els_hcaliso", 50, 0, 1.5, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron HCAL relative isolation", 
-  // 	  "signal_els_hcaliso_elid_barrel", legnames,
-  // 	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)");
-  // compare(signal,"els_hcaliso", 50, 0, 1.5, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron HCAL relative isolation", 
-  // 	  "signal_els_hcaliso_elid_endcap", legnames,
-  // 	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
+  compare(signal,"els_dphi", 50, 0, 0.15, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "#Delta#phi", 
+  	  "signal_els_dphi_elid_barrel", legnames,
+  	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005)");
+  compare(signal,"els_dphi", 50, 0, 0.15, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "#Delta#phi", 
+  	  "signal_els_dphi_elid_endcap", legnames,
+  	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010)");
 
-  // compare(signal,"els_ecaliso", 50, 0, 2, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron ECAL relative isolation", 
-  // 	  "signal_els_ecaliso_elid_barrel", legnames,
-  // 	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)");
-  // compare(signal,"els_ecaliso", 50, 0, 2, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron ECAL relative isolation", 
-  // 	  "signal_els_ecaliso_elid_endcap", legnames,
-  // 	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
 
-  // compare(signal,"els_trackiso", 50, 0, 1, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron track relative isolation", 
-  // 	  "signal_els_trackiso_elid_barrel", legnames,
-  // 	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)");
-  // compare(signal,"els_trackiso", 50, 0, 1, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron track relative isolation", 
-  // 	  "signal_els_trackiso_elid_endcap", legnames,
-  // 	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
+  compare(signal,"els_hcaliso", 50, 0, 1.5, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron HCAL relative isolation", 
+  	  "signal_els_hcaliso_elid_barrel", legnames,
+  	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)");
+  compare(signal,"els_hcaliso", 50, 0, 1.5, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron HCAL relative isolation", 
+  	  "signal_els_hcaliso_elid_endcap", legnames,
+  	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
+
+  compare(signal,"els_ecaliso", 50, 0, 2, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron ECAL relative isolation", 
+  	  "signal_els_ecaliso_elid_barrel", legnames,
+  	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)");
+  compare(signal,"els_ecaliso", 50, 0, 2, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron ECAL relative isolation", 
+  	  "signal_els_ecaliso_elid_endcap", legnames,
+  	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
+
+  compare(signal,"els_trackiso", 50, 0, 1, "Barrel, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron track relative isolation", 
+  	  "signal_els_trackiso_elid_barrel", legnames,
+  	  "abs(els_eta)<1.479&&(els_clustershape<0.011&&els_he<0.15&&els_eminusp<0.012&&els_deta<0.005&&els_dphi<0.03)");
+  compare(signal,"els_trackiso", 50, 0, 1, "Endcap, 15 GeV non-isolated HLT e, T1tttt(1500,100)", "Electron track relative isolation", 
+  	  "signal_els_trackiso_elid_endcap", legnames,
+  	  "abs(els_eta)>=1.479&&(els_clustershape<0.033&&els_he<0.20&&els_eminusp<0.009&&els_deta<0.010&&els_dphi<0.03)");
 
   // vector<TString> qcd;
   // qcd.push_back("root/hlt/oct30_716elid/el15/QCD_Pt-120to170_Tune4C*");
